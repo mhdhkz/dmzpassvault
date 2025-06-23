@@ -1,37 +1,61 @@
 {
   "menu": [
     {
-      "url": "/",
-      "name": "Home",
-      "icon": "menu-icon icon-base bx bx-home-circle",
-      "slug": "pages-home"
+      "url": "/dashboard",
+      "name": "Dashboard",
+      "icon": "menu-icon icon-base bx bx-grid-alt",
+      "slug": "dashboard"
+    },
+    {
+      "name": "Server",
+      "icon": "menu-icon icon-base bx bx-server",
+      "slug": "server",
+      "submenu": [
+        {
+          "url": "/server/server-list",
+          "name": "List Server",
+          "icon": "menu-icon icon-base bx bx-list-ul",
+          "slug": "server-server-list"
+        },
+        {
+          "url": "/page-2",
+          "name": "Form Server",
+          "icon": "menu-icon icon-base bx bx-add-to-queue",
+          "slug": "server-server-form"
+        }
+      ]
+    },
+    {
+      "name": "Vault",
+      "icon": "menu-icon icon-base bx bx-check-shield",
+      "slug": "vault",
+      "submenu": [
+        {
+          "url": "/page-2",
+          "name": "Enkripsi",
+          "icon": "menu-icon icon-base bx bx-lock",
+          "slug": "vault-encryption"
+        },
+        {
+          "url": "/page-2",
+          "name": "Dekripsi",
+          "icon": "menu-icon icon-base bx bx-lock-open-alt",
+          "slug": "vault-decryption"
+        }
+      ]
     },
     {
       "url": "/page-2",
-      "icon": "menu-icon icon-base bx bx-file",
-      "name": "Page 2",
-      "slug": "pages-page-2"
-    },
-    {
-      "url": "/pages/misc-error",
-      "name": "Error",
-      "icon": "menu-icon icon-base bx bx-error",
-      "slug": "pages-misc-error",
-      "target": "_blank"
-    },
-    {
-      "url": "/auth/login-basic",
-      "name": "Login",
-      "icon": "menu-icon icon-base bx bx-log-in",
-      "slug": "auth-login-basic",
-      "target": "_blank"
-    },
-    {
-      "url": "/auth/register-basic",
-      "name": "Register",
+      "name": "Manajemen Akun",
       "icon": "menu-icon icon-base bx bx-user",
-      "slug": "auth-register-basic",
-      "target": "_blank"
+      "slug": "account"
+    },
+    {
+      "url": "javascript:void(0);",
+      "name": "Logout",
+      "icon": "menu-icon icon-base bx bx-exit",
+      "slug": "logout",
+      "id": "logout-link"
     }
   ]
 }

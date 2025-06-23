@@ -11,7 +11,7 @@ return [
     'primaryColor' => '#1A237E', // Set the primary color
     'myTheme' => 'light', // Theme options: 'light' (default), 'dark', 'system'
     'mySkins' => 'default', // Skin options: 'default', 'bordered'
-    'hasSemiDark' => true, // Semi-dark mode: true/false (false by default)
+    'hasSemiDark' => false, // Semi-dark mode: true/false (false by default)
     'myRTLMode' => false, // Right-to-left (RTL) layout: true/false (false by default)
     'hasCustomizer' => true, // Enable/Disable customizer: true (default) or false
     'displayCustomizer' => false, // Display customizer UI: true (default) or false

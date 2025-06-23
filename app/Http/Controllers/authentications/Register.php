@@ -9,25 +9,26 @@ use Illuminate\Support\Facades\Hash;
 
 class Register extends Controller
 {
-    public function index()
-    {
-        return view('content.authentications.register');
-    }
+  public function index()
+  {
+    $pageConfigs = ['myLayout' => 'blank'];
+    return view('content.authentications.register', ['pageConfigs' => $pageConfigs]);
+  }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|confirmed|min:8',
-        ]);
+  public function store(Request $request)
+  {
+    $request->validate([
+      'name' => 'required|string|max:255',
+      'email' => 'required|string|email|max:255|unique:users',
+      'password' => 'required|string|confirmed|min:8',
+    ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    User::create([
+      'name' => $request->name,
+      'email' => $request->email,
+      'password' => Hash::make($request->password),
+    ]);
 
-        return redirect()->route('login')->with('status', 'Berhasil Daftar!');
-    }
+    return redirect()->route('login')->with('status', 'Berhasil Daftar!');
+  }
 }

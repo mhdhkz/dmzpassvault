@@ -1,5 +1,34 @@
 // This file is used for writing your custom styles
 
-// .card {
-//    background-color: #fd0000;
-//  }
+footer.footer a {
+  color: #FDD835;
+  text-decoration: none;
+}
+
+.footer-bottom a {
+  color: #FDD835;
+  text-decoration: none;
+}
+
+.custom-header-bg {
+  background-color: #1A237E !important;
+}
+
+.server_username,
+.server_functionality,
+.server_platform {
+  margin-bottom: 0.5rem;
+}
+
+.server-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+table.dataTable td,
+table.dataTable th {
+  text-align: center;
+  vertical-align: middle;
+}
