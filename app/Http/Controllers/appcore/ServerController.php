@@ -12,7 +12,7 @@ class ServerController extends Controller
   public function getListData()
   {
     $data = Identity::with('platform')
-      ->select('id', 'hostname', 'ip_addr_srv', 'username', 'platform_id', 'functionality');
+      ->select('id', 'hostname', 'ip_addr_srv', 'username', 'functionality', 'platform_id');
 
     return DataTables::of($data)
       ->addColumn('platform_name', function ($row) {

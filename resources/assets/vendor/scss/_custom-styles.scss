@@ -32,3 +32,27 @@ table.dataTable th {
   text-align: center;
   vertical-align: middle;
 }
+
+/* Gaya sorting */
+th.sorting,
+th.sorting_asc,
+th.sorting_desc {
+  cursor: pointer;
+}
+
+th.sorting::after {
+  content: '⇅';
+  color: maroon;
+  font-size: 1rem;
+  margin-left: 1rem;
+}
+
+th.sorting_asc::after {
+  content: '↑';
+  color: maroon;
+}
+
+th.sorting_desc::after {
+  content: '↓';
+  color: maroon;
+}

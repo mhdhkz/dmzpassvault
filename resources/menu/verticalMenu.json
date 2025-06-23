@@ -18,7 +18,7 @@
           "slug": "server-server-list"
         },
         {
-          "url": "/page-2",
+          "url": "/server/server-form",
           "name": "Form Server",
           "icon": "menu-icon icon-base bx bx-add-to-queue",
           "slug": "server-server-form"
@@ -55,7 +55,7 @@
       "name": "Logout",
       "icon": "menu-icon icon-base bx bx-exit",
       "slug": "logout",
-      "id": "logout-link"
+      "id": "logout-link-menu-vert"
     }
   ]
 }

@@ -29,9 +29,12 @@ document.addEventListener('DOMContentLoaded', function (e) {
   if (dt_user_table) {
     const dt_user = new DataTable(dt_user_table, {
       ajax: '/server/list/data',
+      orderMulti: false,
+      order: [],
       columns: [
         { data: 'id' },
         { data: 'id', orderable: false, render: DataTable.render.select() },
+        { data: null },
         { data: 'hostname' },
         { data: 'ip_addr_srv' },
         { data: 'username' },
@@ -66,11 +69,19 @@ document.addEventListener('DOMContentLoaded', function (e) {
           }
         },
         {
-          targets: 2,
+          targets: 2, // indeks kolom nomor urut
+          searchable: false,
+          orderable: false,
+          render: function (data, type, row, meta) {
+            return meta.row + 1 + meta.settings._iDisplayStart;
+          }
+        },
+        {
+          targets: 3,
           responsivePriority: 3,
           render: function (data, type, full, meta) {
-            var name = full['hostname'];
-            var initials = (name.match(/\b\w/g) || []).map(char => char.toUpperCase());
+            var hostname = full['hostname'];
+            var initials = (hostname.match(/\b\w/g) || []).map(char => char.toUpperCase());
             initials = ((initials.shift() || '') + (initials.pop() || '')).toUpperCase();
             var states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];
             var state = states[Math.floor(Math.random() * states.length)];
@@ -82,35 +93,35 @@ document.addEventListener('DOMContentLoaded', function (e) {
                   <div class="avatar avatar-sm me-4">${avatar}</div>
                 </div>
                 <div class="d-flex flex-column">
-                  <span class="fw-medium text-heading">${name}</span>
+                  <span class="fw-medium text-heading">${hostname}</span>
                 </div>
               </div>
             `;
           }
         },
         {
-          targets: 3,
+          targets: 4,
           render: function (data, type, full) {
             return `<span class="text-heading">${full['ip_addr_srv']}</span>`;
           }
         },
         {
-          targets: 4,
-          render: function (data, type, full, meta) {
-            var role = full['username'];
-            return '<span class="text-heading">' + role + '</span>';
-          }
-        },
-        {
           targets: 5,
           render: function (data, type, full, meta) {
-            const plan = full['functionality'];
-
-            return '<span class="text-heading">' + plan + '</span>';
+            var username = full['username'];
+            return '<span class="text-heading">' + username + '</span>';
           }
         },
         {
           targets: 6,
+          render: function (data, type, full, meta) {
+            var functionality = full['functionality'];
+
+            return '<span class="text-heading">' + functionality + '</span>';
+          }
+        },
+        {
+          targets: 7,
           render: function (data, type, full) {
             return `<span class="text-heading">${full['platform_name']}</span>`;
           }
@@ -145,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function (e) {
         style: 'multi',
         selector: 'td:nth-child(2)'
       },
-      order: [[2, 'desc']],
       layout: {
         topStart: {
           rowClass: 'row mx-3 my-0 justify-content-between',
@@ -169,6 +179,46 @@ document.addEventListener('DOMContentLoaded', function (e) {
             {
               buttons: [
                 {
+                  text: '<i class="bx bx-trash"></i> Hapus Terpilih',
+                  className: 'btn btn-danger delete-selected',
+                  action: function () {
+                    const selectedData = dt_user.rows({ selected: true }).data().toArray();
+                    if (selectedData.length === 0) {
+                      alert('Pilih setidaknya satu baris untuk dihapus.');
+                      return;
+                    }
+
+                    if (!confirm('Yakin ingin menghapus data terpilih?')) return;
+
+                    const idsToDelete = selectedData.map(row => row.id);
+
+                    fetch('/server/delete/multiple', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                      },
+                      body: JSON.stringify({ ids: idsToDelete })
+                    })
+                      .then(res => res.json())
+                      .then(result => {
+                        if (result.success) {
+                          dt_user.ajax.reload();
+                        } else {
+                          alert('Gagal menghapus data.');
+                        }
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        alert('Terjadi kesalahan saat menghapus.');
+                      });
+                  }
+                }
+              ]
+            },
+            {
+              buttons: [
+                {
                   extend: 'collection',
                   className: 'btn btn-label-secondary dropdown-toggle',
                   text: '<span class="d-flex align-items-center gap-2"><i class="icon-base bx bx-export icon-sm"></i> <span class="d-none d-sm-inline-block">Export</span></span>',
@@ -178,20 +228,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-printer me-2"></i>Print</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6],
+                        columns: [2, 3, 4, 5, 6, 7],
                         format: {
-                          body: function (inner, coldex, rowdex) {
-                            if (inner.length <= 0) return inner;
-                            const el = new DOMParser().parseFromString(inner, 'text/html').body.childNodes;
-                            let result = '';
-                            el.forEach(item => {
-                              if (item.classList && item.classList.contains('user-name')) {
-                                result += item.lastChild.firstChild.textContent;
-                              } else {
-                                result += item.textContent || item.innerText || '';
-                              }
-                            });
-                            return result;
+                          body: function (inner) {
+                            if (!inner) return '';
+
+                            const parsed = new DOMParser().parseFromString(inner, 'text/html');
+                            const container = parsed.body;
+
+                            // Coba cari langsung elemen dengan class .user-name .text-heading
+                            const textEl = container.querySelector('.user-name .text-heading');
+
+                            if (textEl) return textEl.textContent.trim();
+
+                            // Jika tidak ditemukan, fallback ke textContent seluruhnya
+                            return container.textContent.trim();
                           }
                         }
                       },
@@ -211,20 +262,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-2"></i>CSV</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6],
+                        columns: [2, 3, 4, 5, 6, 7],
                         format: {
-                          body: function (inner, coldex, rowdex) {
-                            if (inner.length <= 0) return inner;
-                            const el = new DOMParser().parseFromString(inner, 'text/html').body.childNodes;
-                            let result = '';
-                            el.forEach(item => {
-                              if (item.classList && item.classList.contains('user-name')) {
-                                result += item.lastChild.firstChild.textContent;
-                              } else {
-                                result += item.textContent || item.innerText || '';
-                              }
-                            });
-                            return result;
+                          body: function (inner) {
+                            if (!inner) return '';
+
+                            const parsed = new DOMParser().parseFromString(inner, 'text/html');
+                            const container = parsed.body;
+
+                            // Coba cari langsung elemen dengan class .user-name .text-heading
+                            const textEl = container.querySelector('.user-name .text-heading');
+
+                            if (textEl) return textEl.textContent.trim();
+
+                            // Jika tidak ditemukan, fallback ke textContent seluruhnya
+                            return container.textContent.trim();
                           }
                         }
                       }
@@ -234,20 +286,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-export me-2"></i>Excel</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6],
+                        columns: [2, 3, 4, 5, 6, 7],
                         format: {
-                          body: function (inner, coldex, rowdex) {
-                            if (inner.length <= 0) return inner;
-                            const el = new DOMParser().parseFromString(inner, 'text/html').body.childNodes;
-                            let result = '';
-                            el.forEach(item => {
-                              if (item.classList && item.classList.contains('user-name')) {
-                                result += item.lastChild.firstChild.textContent;
-                              } else {
-                                result += item.textContent || item.innerText || '';
-                              }
-                            });
-                            return result;
+                          body: function (inner) {
+                            if (!inner) return '';
+
+                            const parsed = new DOMParser().parseFromString(inner, 'text/html');
+                            const container = parsed.body;
+
+                            // Coba cari langsung elemen dengan class .user-name .text-heading
+                            const textEl = container.querySelector('.user-name .text-heading');
+
+                            if (textEl) return textEl.textContent.trim();
+
+                            // Jika tidak ditemukan, fallback ke textContent seluruhnya
+                            return container.textContent.trim();
                           }
                         }
                       }
@@ -257,20 +310,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-pdf me-2"></i>PDF</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6],
+                        columns: [2, 3, 4, 5, 6, 7],
                         format: {
-                          body: function (inner, coldex, rowdex) {
-                            if (inner.length <= 0) return inner;
-                            const el = new DOMParser().parseFromString(inner, 'text/html').body.childNodes;
-                            let result = '';
-                            el.forEach(item => {
-                              if (item.classList && item.classList.contains('user-name')) {
-                                result += item.lastChild.firstChild.textContent;
-                              } else {
-                                result += item.textContent || item.innerText || '';
-                              }
-                            });
-                            return result;
+                          body: function (inner) {
+                            if (!inner) return '';
+
+                            const parsed = new DOMParser().parseFromString(inner, 'text/html');
+                            const container = parsed.body;
+
+                            // Coba cari langsung elemen dengan class .user-name .text-heading
+                            const textEl = container.querySelector('.user-name .text-heading');
+
+                            if (textEl) return textEl.textContent.trim();
+
+                            // Jika tidak ditemukan, fallback ke textContent seluruhnya
+                            return container.textContent.trim();
                           }
                         }
                       }
@@ -343,42 +397,80 @@ document.addEventListener('DOMContentLoaded', function (e) {
           }
         }
       },
+      // Replace initComplete function content with this
       initComplete: function () {
         const api = this.api();
 
-        // Helper function to create a select dropdown and append options
-        const createFilter = (columnIndex, containerClass, selectId, defaultOptionText) => {
+        // Dropdown filter creator
+        const createFilter = (columnIndex, containerClass, selectId, defaultText) => {
           const column = api.column(columnIndex);
           const select = document.createElement('select');
           select.id = selectId;
-          select.className = 'form-select text-capitalize';
-          select.innerHTML = `<option value="">${defaultOptionText}</option>`;
+          select.className = 'form-select';
+          select.innerHTML = `<option value="">${defaultText}</option>`;
           document.querySelector(containerClass).appendChild(select);
 
-          // Add event listener for filtering
-          select.addEventListener('change', () => {
-            const val = select.value ? `^${select.value}$` : '';
-            column.search(val, true, false).draw();
+          select.addEventListener('change', function () {
+            const val = this.value ? `^${this.value}$` : '';
+            column.search(val, true, false).draw(); // draw akan trigger dependencies
           });
 
-          // Populate options based on unique column data
-          const uniqueData = Array.from(new Set(column.data().toArray())).sort();
-          uniqueData.forEach(d => {
+          const uniqueValues = [...new Set(column.data().toArray())].sort();
+          uniqueValues.forEach(val => {
             const option = document.createElement('option');
-            option.value = d;
-            option.textContent = d;
+            option.value = val;
+            option.textContent = val;
             select.appendChild(option);
           });
         };
 
-        // Username filter
-        createFilter(4, '.server_username', 'ServerUsername', 'Filter Username');
+        // Build initial dropdown
+        createFilter(5, '.server_username', 'ServerUsername', 'Username');
+        createFilter(6, '.server_functionality', 'ServerFunctionality', 'Functionality');
+        createFilter(7, '.server_platform', 'ServerPlatform', 'Platform');
 
-        // Functionality filter
-        createFilter(5, '.server_functionality', 'ServerFunctionality', 'Filter Functionality');
+        // Update dropdown options based on filtered data
+        const filterDependencies = () => {
+          const filteredData = api.rows({ search: 'applied' }).data().toArray();
 
-        // Platform filter
-        createFilter(6, '.server_platform', 'ServerPlatform', 'Filter Platform');
+          const updateDropdown = (id, key) => {
+            const select = document.getElementById(id);
+            const selected = select.value;
+            const defaultText = select.options[0]?.text || key;
+
+            select.innerHTML = `<option value="">${defaultText}</option>`;
+
+            const unique = [...new Set(filteredData.map(r => r[key]))].sort();
+            unique.forEach(val => {
+              const opt = document.createElement('option');
+              opt.value = val;
+              opt.textContent = val;
+              select.appendChild(opt);
+            });
+
+            if (selected && unique.includes(selected)) {
+              select.value = selected;
+            }
+          };
+
+          updateDropdown('ServerUsername', 'username');
+          updateDropdown('ServerFunctionality', 'functionality');
+          updateDropdown('ServerPlatform', 'platform_name');
+        };
+
+        // Trigger redraw logic only AFTER table draw
+        api.on('draw', () => {
+          filterDependencies();
+        });
+
+        // Clear button
+        document.getElementById('clearFilterBtn')?.addEventListener('click', function () {
+          document.getElementById('ServerUsername').value = '';
+          document.getElementById('ServerFunctionality').value = '';
+          document.getElementById('ServerPlatform').value = '';
+
+          api.columns().search('').draw(); // clear all filters
+        });
       }
     });
 
@@ -434,6 +526,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
         bindDeleteEvent();
       }
     });
+
     // To remove default btn-secondary in export buttons
     $('.dt-buttons > .btn-group > button').removeClass('btn-secondary');
   }
@@ -529,3 +622,36 @@ document.addEventListener('DOMContentLoaded', function (e) {
     }
   });
 });
+function filterDependencies() {
+  const api = dt_user;
+  const filteredData = api.rows({ search: 'applied' }).data().toArray();
+
+  const updateOptions = (selectId, dataKey) => {
+    const select = document.getElementById(selectId);
+    const selectedVal = select.value;
+    const defaultText = select.options[0]?.text || dataKey;
+
+    // Clear all options except the default
+    select.innerHTML = `<option value="">${defaultText}</option>`;
+
+    // Get unique values from filtered data
+    const uniqueValues = [...new Set(filteredData.map(row => row[dataKey]))].sort();
+
+    uniqueValues.forEach(val => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      select.appendChild(opt);
+    });
+
+    // Restore previous selected value if still available
+    if (selectedVal && uniqueValues.includes(selectedVal)) {
+      select.value = selectedVal;
+    }
+  };
+
+  // Perbarui SEMUA dropdown filter berdasarkan data yang sudah terfilter
+  updateOptions('ServerUsername', 'username');
+  updateOptions('ServerFunctionality', 'functionality');
+  updateOptions('ServerPlatform', 'platform_name');
+}

@@ -8,7 +8,7 @@ class Identity extends Model
 {
   protected $table = 'identities';
 
-  protected $fillable = ['hostname', 'ip_addr_srv', 'username', 'platform_id'];
+  protected $fillable = ['hostname', 'ip_addr_srv', 'username', 'functionality', 'platform_id'];
 
   protected $with = ['platform'];
   public function platform()

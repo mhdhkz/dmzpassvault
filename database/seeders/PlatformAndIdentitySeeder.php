@@ -21,9 +21,9 @@ class PlatformAndIdentitySeeder extends Seeder
         'id' => 'ID001',
         'platform_id' => 'PF001',
         'hostname' => 'srv-linux-01',
-        'username' => 'root',
-        'functionality' => 'Web Server',
         'ip_addr_srv' => '192.168.1.10',
+        'username' => 'root',
+        'functionality' => 'Web Server App A',
         'created_at' => now(),
         'updated_at' => now()
       ],
@@ -31,9 +31,10 @@ class PlatformAndIdentitySeeder extends Seeder
         'id' => 'ID002',
         'platform_id' => 'PF002',
         'hostname' => 'db-maria-01',
-        'username' => 'dbadmin',
-        'functionality' => 'Database Server',
         'ip_addr_srv' => '192.168.1.20',
+        'username' => 'dbadmin',
+        'functionality' => 'DB Server App A',
+
         'created_at' => now(),
         'updated_at' => now()
       ]

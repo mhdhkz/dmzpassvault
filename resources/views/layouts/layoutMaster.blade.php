@@ -20,17 +20,17 @@
     )
 @endisset
 
-<form id="logout-form" method="POST" action="{{ route('logout') }}" style="display: none;">
+<form id="logout-form-menu-vert" method="POST" action="{{ route('logout') }}" style="display: none;">
   @csrf
 </form>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const logoutLink = document.getElementById('logout-link');
+    const logoutLink = document.getElementById('logout-link-menu-vert');
     if (logoutLink) {
       logoutLink.addEventListener('click', function (e) {
         e.preventDefault();
-        document.getElementById('logout-form').submit();
+        document.getElementById('logout-form-menu-vert').submit();
       });
     }
   });

@@ -115,15 +115,35 @@
     <table class="datatables-users table border-top">
       <thead class="table-light">
       <tr>
-        <th class="control sorting_disabled dtr-hidden" rowspan="1" colspan="1" style="width: 0px; display: none;"
+        <th class="control dt-orderable-none dtr-hidden" rowspan="1" colspan="1" style="width: 0px; display: none;"
         aria-label=""></th>
-        <th></th>
-        <th>Hostname</th>
-        <th>IP Address</th>
-        <th>Username</th>
-        <th>Functionality</th>
-        <th>Platform</th>
-        <th>Actions</th>
+
+        <th data-dt-column="1" class="dt-orderable-none" tabindex="-1" aria-label="Checkbox: Not sortable"></th>
+
+        <th data-dt-column="2" class="dt-orderable-none" tabindex="-1" aria-label="No: Not sortable">No</th>
+
+        <th data-dt-column="3" class="sorting" tabindex="0" aria-label="Hostname: Activate to sort">
+        <span class="dt-column-title" role="button">Hostname</span>
+        </th>
+
+        <th data-dt-column="4" class="sorting" tabindex="0" aria-label="IP Address: Activate to sort">
+        <span class="dt-column-title" role="button">IP Address</span>
+        </th>
+
+        <th data-dt-column="5" class="sorting" tabindex="0" aria-label="Username: Activate to sort">
+        <span class="dt-column-title" role="button">Username</span>
+        </th>
+
+        <th data-dt-column="5" class="sorting" tabindex="0" aria-label="Functionality: Activate to sort">
+        <span class="dt-column-title" role="button">Functionality</span>
+        </th>
+
+        <th data-dt-column="6" class="sorting" tabindex="0" aria-label="Platform: Activate to sort">
+        <span class="dt-column-title" role="button">Platform</span>
+        </th>
+        <th data-dt-column="7" class="dt-orderable-none" tabindex="-1" aria-label="Actions: Not sortable">
+        <span class="dt-column-title">Actions</span>
+        </th>
       </tr>
       </thead>
 
@@ -132,9 +152,14 @@
       <div class="server_username"></div>
       <div class="server_functionality"></div>
       <div class="server_platform"></div>
+      <div>
+        <button type="button" id="clearFilterBtn" class="btn btn-outline-secondary">
+        Clear Filter
+        </button>
       </div>
-
+      </div>
     </table>
+
     </div>
     <!-- Offcanvas to add new user -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddUser" aria-labelledby="offcanvasAddUserLabel">
