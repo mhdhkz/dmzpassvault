@@ -13,7 +13,7 @@ class PlatformAndIdentitySeeder extends Seeder
   {
     DB::table('platforms')->insert([
       ['id' => 'PF001', 'name' => 'Linux', 'description' => 'Linux-based server platform', 'created_at' => now(), 'updated_at' => now()],
-      ['id' => 'PF002', 'name' => 'MariaDB', 'description' => 'Database platform', 'created_at' => now(), 'updated_at' => now()],
+      ['id' => 'PF002', 'name' => 'Database', 'description' => 'Database platform', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
     DB::table('identities')->insert([
@@ -24,6 +24,7 @@ class PlatformAndIdentitySeeder extends Seeder
         'ip_addr_srv' => '192.168.1.10',
         'username' => 'root',
         'functionality' => 'Web Server App A',
+        'description' => 'Server backend utama untuk aplikasi A.', // ✅ ditambahkan
         'created_at' => now(),
         'updated_at' => now()
       ],
@@ -34,10 +35,11 @@ class PlatformAndIdentitySeeder extends Seeder
         'ip_addr_srv' => '192.168.1.20',
         'username' => 'dbadmin',
         'functionality' => 'DB Server App A',
-
+        'description' => 'Database utama untuk App A.', // ✅ ditambahkan
         'created_at' => now(),
         'updated_at' => now()
       ]
     ]);
+
   }
 }

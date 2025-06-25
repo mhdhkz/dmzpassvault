@@ -56,3 +56,56 @@ th.sorting_desc::after {
   content: '↓';
   color: maroon;
 }
+
+textarea.form-control {
+    min-height: calc(1.375em + 11rem + calc(var(--bs-border-width) * 2));
+}
+
+.dataTables_processing {
+  font-size: 0 !important;
+  background: transparent !important;
+  color: transparent !important;
+  pointer-events: none;
+  position: relative;
+}
+
+.dataTables_processing *:not(.sk-fold):not(.sk-fold-cube) {
+  display: none !important;
+}
+
+div.dt-processing > div:last-child {
+  display: none !important;
+}
+
+div.dt-processing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  margin-left: -100px;
+  margin-top: -22px;
+  text-align: center;
+  padding: 1rem;
+  z-index: 10;
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+
+  background-image:
+    /* Kiri */
+    linear-gradient(to bottom, #000000, #000000),
+    linear-gradient(to bottom, #FFD700, #FFD700),
+
+    /* Kanan */
+    linear-gradient(to bottom, #FFD700, #FFD700),
+    linear-gradient(to bottom, #000000, #000000);
+
+
+  background-repeat: no-repeat;
+  background-size: 4px 100%;
+  background-position:
+    0 0,
+    4px 0,
+    calc(100% - 4px) 0,
+    100% 0;
+}

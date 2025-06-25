@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
   if (dt_user_table) {
     const dt_user = new DataTable(dt_user_table, {
       ajax: '/server/list/data',
+      processing: true,
       orderMulti: false,
       order: [],
       columns: [
@@ -332,11 +333,10 @@ document.addEventListener('DOMContentLoaded', function (e) {
                   ]
                 },
                 {
-                  text: '<i class="icon-base bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah Server Baru</span>',
-                  className: 'add-new btn btn-primary',
-                  attr: {
-                    'data-bs-toggle': 'offcanvas',
-                    'data-bs-target': '#offcanvasAddUser'
+                  text: '<i class="bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah Server Baru</span>',
+                  className: 'btn btn-primary',
+                  action: function () {
+                    window.location.href = '/server/server-form';
                   }
                 }
               ]
@@ -353,6 +353,16 @@ document.addEventListener('DOMContentLoaded', function (e) {
         sLengthMenu: '_MENU_',
         search: '',
         searchPlaceholder: 'Search User',
+        processing: `
+        <div class="d-flex justify-content-center align-items-center py-5">
+          <div class="sk-fold">
+            <div class="sk-fold-cube"></div>
+            <div class="sk-fold-cube"></div>
+            <div class="sk-fold-cube"></div>
+            <div class="sk-fold-cube"></div>
+          </div>
+        </div>
+      `,
         paginate: {
           next: '<i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>',
           previous: '<i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>',
@@ -563,64 +573,6 @@ document.addEventListener('DOMContentLoaded', function (e) {
       });
     });
   }, 100);
-
-  // Validation & Phone mask
-  const phoneMaskList = document.querySelectorAll('.phone-mask'),
-    addNewUserForm = document.getElementById('addNewUserForm');
-
-  // Phone Number
-  if (phoneMaskList) {
-    phoneMaskList.forEach(function (phoneMask) {
-      phoneMask.addEventListener('input', event => {
-        const cleanValue = event.target.value.replace(/\D/g, '');
-        phoneMask.value = formatGeneral(cleanValue, {
-          blocks: [3, 3, 4],
-          delimiters: [' ', ' ']
-        });
-      });
-      registerCursorTracker({
-        input: phoneMask,
-        delimiter: ' '
-      });
-    });
-  }
-  // Add New User Form Validation
-  const fv = FormValidation.formValidation(addNewUserForm, {
-    fields: {
-      userFullname: {
-        validators: {
-          notEmpty: {
-            message: 'Please enter fullname '
-          }
-        }
-      },
-      userEmail: {
-        validators: {
-          notEmpty: {
-            message: 'Please enter your email'
-          },
-          emailAddress: {
-            message: 'The value is not a valid email address'
-          }
-        }
-      }
-    },
-    plugins: {
-      trigger: new FormValidation.plugins.Trigger(),
-      bootstrap5: new FormValidation.plugins.Bootstrap5({
-        // Use this for enabling/changing valid/invalid class
-        eleValidClass: '',
-        rowSelector: function (field, ele) {
-          // field is the field name & ele is the field element
-          return '.form-control-validation';
-        }
-      }),
-      submitButton: new FormValidation.plugins.SubmitButton(),
-      // Submit the form when all fields are valid
-      // defaultSubmit: new FormValidation.plugins.DefaultSubmit(),
-      autoFocus: new FormValidation.plugins.AutoFocus()
-    }
-  });
 });
 function filterDependencies() {
   const api = dt_user;

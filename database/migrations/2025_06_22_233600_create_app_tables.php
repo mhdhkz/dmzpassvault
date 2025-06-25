@@ -21,6 +21,7 @@ return new class extends Migration {
       $table->string('ip_addr_srv', 45)->nullable();
       $table->string('username', 100);
       $table->string('functionality', 100)->nullable();
+      $table->text('description')->nullable();
       $table->timestamps();
 
       $table->foreign('platform_id')->references('id')->on('platforms')->onDelete('cascade');

@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Platform extends Model
 {
-  public $incrementing = false;
-  protected $keyType = 'string';
   protected $table = 'platforms';
+  protected $keyType = 'string';
+  public $incrementing = false;
 
-  protected $fillable = ['id', 'name'];
+  protected $fillable = ['id', 'name', 'description'];
 }
