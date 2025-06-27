@@ -5,11 +5,11 @@ namespace App\Http\Controllers\pages;
 use App\Http\Controllers\Controller;
 use App\Models\Platform;
 
-class ServerForm extends Controller
+class IdentityForm extends Controller
 {
   public function index()
   {
     $platforms = Platform::orderBy('name')->get();
-    return view('content.pages.server-form', compact('platforms'));
+    return view('content.pages.identity-form', compact('platforms'));
   }
 }

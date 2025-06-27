@@ -109,3 +109,78 @@ div.dt-processing {
     calc(100% - 4px) 0,
     100% 0;
 }
+
+.select2-container--default .select2-selection--single {
+  background-color: transparent;
+  color: inherit;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: inherit;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color: transparent transparent white transparent;
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--single {
+  background-color: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .select2-dropdown {
+  background-color: #1f2937;
+  color: #fff;
+}
+
+/* Custom SweetAlert2 toast */
+.swal2-toast.colored-toast {
+  font-size: 1rem !important; /* Ukuran font diperbesar */
+  padding: 1rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  min-height: auto !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Tambahan khusus untuk success toast */
+.swal2-toast.colored-toast.swal2-icon-success {
+  background-color: #28a745 !important; /* Hijau */
+  color: #fff !important;
+  border: none !important;
+}
+
+/* Ubah warna centang menjadi putih */
+.swal2-toast.swal2-icon-success .swal2-success-line-tip,
+.swal2-toast.swal2-icon-success .swal2-success-line-long {
+  background-color: #fff !important;
+}
+
+.swal2-toast.swal2-icon-success .swal2-success-ring {
+  border: 0.25em solid #fff !important;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Warna font dan jarak */
+.swal2-toast.colored-toast .swal2-title {
+  font-size: 1rem !important; /* Ukuran teks diperbesar */
+  font-weight: 600;
+  margin: 0 !important;
+  color: #fff !important;
+  line-height: 1.75rem !important;
+}
+
+/* Ikon: diperbesar dan beri ruang bawah */
+.swal2-toast.colored-toast .swal2-icon {
+  margin: 0 1rem 0 0 !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  padding-bottom: 3px;
+}
+
+.swal2-toast.colored-toast .swal2-icon-content {
+  line-height: 2rem;
+}

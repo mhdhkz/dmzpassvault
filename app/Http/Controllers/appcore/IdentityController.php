@@ -9,7 +9,7 @@ use App\Models\Platform;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 
-class ServerController extends Controller
+class IdentityController extends Controller
 {
   public function getListData()
   {
@@ -27,21 +27,21 @@ class ServerController extends Controller
       ->make(true);
   }
 
-  public function serverForm()
+  public function identityForm()
   {
     $platforms = Platform::all();
-    return view('content.pages.server-form', compact('platforms'));
+    return view('content.pages.identity-form', compact('platforms'));
   }
 
   public function store(Request $request)
   {
     $validated = $request->validate([
-      'hostname' => 'required|string|max:100|unique:identities,hostname',
-      'ip_addr_srv' => 'nullable|ipv4',
-      'username' => 'required|string|max:100',
-      'functionality' => 'nullable|string|max:100',
+      'hostname' => 'required|string|max:100|unique:identities,hostname|regex:/^(?!\s)(.*\S)?$/',
+      'ip_addr_srv' => 'required|ipv4|regex:/^(?!\s)(.*\S)?$/',
+      'username' => 'required|string|max:100|regex:/^(?!\s)(.*\S)?$/',
+      'functionality' => 'required|string|max:100|regex:/^(?!\s)(.*\S)?$/',
       'description' => 'nullable|string|max:500',
-      'platform_id' => 'required|exists:platforms,id',
+      'platform_id' => 'required|exists:platforms,id'
     ]);
 
     // Gunakan transaksi agar ID selalu konsisten
@@ -66,10 +66,26 @@ class ServerController extends Controller
 
       DB::commit();
 
-      return redirect()->route('server-server-form')->with('success', 'Server berhasil ditambahkan.');
+      return redirect()->route('identity-identity-form')->with('success', 'Identity berhasil ditambahkan.');
     } catch (\Exception $e) {
       DB::rollBack();
       return back()->withErrors(['db' => 'Terjadi kesalahan saat menyimpan data.'])->withInput();
     }
   }
+
+  public function deleteMultiple(Request $request)
+  {
+    $ids = $request->input('ids', []);
+
+    try {
+      DB::beginTransaction();
+      Identity::whereIn('id', $ids)->delete();
+      DB::commit();
+      return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+      DB::rollBack();
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+  }
+
 }

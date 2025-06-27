@@ -3,9 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PlatformAndIdentitySeeder extends Seeder
 {
@@ -16,30 +15,25 @@ class PlatformAndIdentitySeeder extends Seeder
       ['id' => 'PF002', 'name' => 'Database', 'description' => 'Database platform', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
-    DB::table('identities')->insert([
-      [
-        'id' => 'ID001',
-        'platform_id' => 'PF001',
-        'hostname' => 'srv-linux-01',
-        'ip_addr_srv' => '192.168.1.10',
-        'username' => 'root',
-        'functionality' => 'Web Server App A',
-        'description' => 'Server backend utama untuk aplikasi A.', // ✅ ditambahkan
-        'created_at' => now(),
-        'updated_at' => now()
-      ],
-      [
-        'id' => 'ID002',
-        'platform_id' => 'PF002',
-        'hostname' => 'db-maria-01',
-        'ip_addr_srv' => '192.168.1.20',
-        'username' => 'dbadmin',
-        'functionality' => 'DB Server App A',
-        'description' => 'Database utama untuk App A.', // ✅ ditambahkan
-        'created_at' => now(),
-        'updated_at' => now()
-      ]
-    ]);
+    $identities = [];
 
+    for ($i = 1; $i <= 25; $i++) {
+      $id = 'ID' . str_pad($i, 3, '0', STR_PAD_LEFT);
+      $isLinux = $i % 2 !== 0;
+
+      $identities[] = [
+        'id' => $id,
+        'platform_id' => $isLinux ? 'PF001' : 'PF002',
+        'hostname' => $isLinux ? "srv-linux-" . str_pad($i, 2, '0', STR_PAD_LEFT) : "db-maria-" . str_pad($i, 2, '0', STR_PAD_LEFT),
+        'ip_addr_srv' => '192.168.' . ($isLinux ? '1' : '2') . '.' . $i,
+        'username' => $isLinux ? 'root' : 'dbadmin',
+        'functionality' => $isLinux ? 'Web Server App ' . chr(64 + $i) : 'DB Server App ' . chr(64 + $i),
+        'description' => $isLinux ? 'Server backend aplikasi ' . chr(64 + $i) : 'Database untuk aplikasi ' . chr(64 + $i),
+        'created_at' => now(),
+        'updated_at' => now(),
+      ];
+    }
+
+    DB::table('identities')->insert($identities);
   }
 }

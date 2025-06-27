@@ -7,21 +7,21 @@
       "slug": "dashboard"
     },
     {
-      "name": "Server",
+      "name": "Identity",
       "icon": "menu-icon icon-base bx bx-server",
-      "slug": "server",
+      "slug": "identity",
       "submenu": [
         {
-          "url": "/server/server-list",
-          "name": "List Server",
+          "url": "/identity/identity-list",
+          "name": "List Identity",
           "icon": "menu-icon icon-base bx bx-list-ul",
-          "slug": "server-server-list"
+          "slug": "identity-identity-list"
         },
         {
-          "url": "/server/server-form",
-          "name": "Form Server",
+          "url": "/identity/identity-form",
+          "name": "Form Identity",
           "icon": "menu-icon icon-base bx bx-add-to-queue",
-          "slug": "server-server-form"
+          "slug": "identity-identity-form"
         }
       ]
     },

@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
   // Users datatable
   if (dt_user_table) {
     const dt_user = new DataTable(dt_user_table, {
-      ajax: '/server/list/data',
+      ajax: '/identity/list/data',
       processing: true,
       orderMulti: false,
       order: [],
@@ -185,34 +185,97 @@ document.addEventListener('DOMContentLoaded', function (e) {
                   action: function () {
                     const selectedData = dt_user.rows({ selected: true }).data().toArray();
                     if (selectedData.length === 0) {
-                      alert('Pilih setidaknya satu baris untuk dihapus.');
+                      Swal.fire({
+                        icon: 'warning',
+                        title: 'Tidak ada data terpilih',
+                        text: 'Silakan pilih setidaknya satu baris untuk dihapus.',
+                        confirmButtonText: 'OK',
+                        customClass: { confirmButton: 'btn btn-primary' },
+                        buttonsStyling: false
+                      });
                       return;
                     }
 
-                    if (!confirm('Yakin ingin menghapus data terpilih?')) return;
-
-                    const idsToDelete = selectedData.map(row => row.id);
-
-                    fetch('/server/delete/multiple', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    Swal.fire({
+                      title: 'Hapus Data Terpilih?',
+                      text: 'Data yang dihapus tidak dapat dikembalikan.',
+                      icon: 'warning',
+                      showCancelButton: true,
+                      confirmButtonText: 'Ya, Hapus!',
+                      cancelButtonText: 'Batal',
+                      customClass: {
+                        confirmButton: 'btn btn-danger mx-1',
+                        cancelButton: 'btn btn-outline-secondary mx-1'
                       },
-                      body: JSON.stringify({ ids: idsToDelete })
-                    })
-                      .then(res => res.json())
-                      .then(result => {
-                        if (result.success) {
-                          dt_user.ajax.reload();
-                        } else {
-                          alert('Gagal menghapus data.');
-                        }
+                      buttonsStyling: false
+                    }).then(result => {
+                      if (!result.isConfirmed) return;
+
+                      const idsToDelete = selectedData.map(row => row.id);
+
+                      fetch('/identity/delete/multiple', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ ids: idsToDelete })
                       })
-                      .catch(err => {
-                        console.error(err);
-                        alert('Terjadi kesalahan saat menghapus.');
-                      });
+                        .then(res => res.json())
+                        .then(result => {
+                          if (result.success) {
+                            dt_user.ajax.reload();
+
+                            // Toast-style SweetAlert
+                            const Toast = Swal.mixin({
+                              toast: true,
+                              position: 'top-end',
+                              showConfirmButton: false,
+                              timer: 3000,
+                              timerProgressBar: true,
+                              customClass: {
+                                popup: 'colored-toast'
+                              },
+                              didOpen: toast => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer);
+                                toast.addEventListener('mouseleave', Swal.resumeTimer);
+                              }
+                            });
+
+                            Toast.fire({
+                              icon: 'success',
+                              title: 'Data berhasil dihapus',
+                              customClass: {
+                                popup: 'colored-toast'
+                              }
+                            });
+                          } else {
+                            Swal.fire({
+                              icon: 'error',
+                              title: 'Gagal',
+                              text: 'Data gagal dihapus.',
+                              confirmButtonText: 'OK',
+                              customClass: {
+                                confirmButton: 'btn btn-danger'
+                              },
+                              buttonsStyling: false
+                            });
+                          }
+                        })
+                        .catch(err => {
+                          console.error(err);
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'Terjadi Kesalahan',
+                            text: 'Silakan coba lagi nanti.',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                              confirmButton: 'btn btn-danger'
+                            },
+                            buttonsStyling: false
+                          });
+                        });
+                    });
                   }
                 }
               ]
@@ -229,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-printer me-2"></i>Print</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6, 7],
+                        columns: [3, 4, 5, 6, 7],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -263,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-2"></i>CSV</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6, 7],
+                        columns: [3, 4, 5, 6, 7],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -287,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-export me-2"></i>Excel</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6, 7],
+                        columns: [3, 4, 5, 6, 7],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -311,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-pdf me-2"></i>PDF</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [2, 3, 4, 5, 6, 7],
+                        columns: [3, 4, 5, 6, 7],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -333,10 +396,10 @@ document.addEventListener('DOMContentLoaded', function (e) {
                   ]
                 },
                 {
-                  text: '<i class="bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah Server Baru</span>',
+                  text: '<i class="bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah Identity Baru</span>',
                   className: 'btn btn-primary',
                   action: function () {
-                    window.location.href = '/server/server-form';
+                    window.location.href = '/identity/identity-form';
                   }
                 }
               ]
@@ -411,20 +474,15 @@ document.addEventListener('DOMContentLoaded', function (e) {
       initComplete: function () {
         const api = this.api();
 
-        // Dropdown filter creator
-        const createFilter = (columnIndex, containerClass, selectId, defaultText) => {
+        const createSearchableDropdown = (columnIndex, containerClass, selectId, placeholderText) => {
           const column = api.column(columnIndex);
           const select = document.createElement('select');
           select.id = selectId;
-          select.className = 'form-select';
-          select.innerHTML = `<option value="">${defaultText}</option>`;
+          select.className = 'form-select select2';
+          select.innerHTML = `<option value="">${placeholderText}</option>`;
           document.querySelector(containerClass).appendChild(select);
 
-          select.addEventListener('change', function () {
-            const val = this.value ? `^${this.value}$` : '';
-            column.search(val, true, false).draw(); // draw akan trigger dependencies
-          });
-
+          // Isi awal
           const uniqueValues = [...new Set(column.data().toArray())].sort();
           uniqueValues.forEach(val => {
             const option = document.createElement('option');
@@ -432,54 +490,56 @@ document.addEventListener('DOMContentLoaded', function (e) {
             option.textContent = val;
             select.appendChild(option);
           });
+
+          $(select).select2({
+            placeholder: placeholderText,
+            width: '100%'
+          });
+
+          $(select).on('change', function () {
+            const val = this.value ? `^${this.value}$` : '';
+            column.search(val, true, false).draw();
+          });
         };
 
-        // Build initial dropdown
-        createFilter(5, '.server_username', 'ServerUsername', 'Username');
-        createFilter(6, '.server_functionality', 'ServerFunctionality', 'Functionality');
-        createFilter(7, '.server_platform', 'ServerPlatform', 'Platform');
+        const updateSearchableDropdown = (selectId, columnIndex, key) => {
+          const select = $(`#${selectId}`);
+          const column = api.column(columnIndex);
+          const selectedValue = select.val();
+          const placeholder = select.find('option:first').text();
 
-        // Update dropdown options based on filtered data
-        const filterDependencies = () => {
           const filteredData = api.rows({ search: 'applied' }).data().toArray();
+          const uniqueValues = [...new Set(filteredData.map(r => r[key]))].sort();
 
-          const updateDropdown = (id, key) => {
-            const select = document.getElementById(id);
-            const selected = select.value;
-            const defaultText = select.options[0]?.text || key;
+          // Rebuild options safely for Select2
+          select.empty().append(`<option value="">${placeholder}</option>`);
+          uniqueValues.forEach(val => {
+            select.append(`<option value="${val}">${val}</option>`);
+          });
 
-            select.innerHTML = `<option value="">${defaultText}</option>`;
+          if (selectedValue && uniqueValues.includes(selectedValue)) {
+            select.val(selectedValue);
+          }
 
-            const unique = [...new Set(filteredData.map(r => r[key]))].sort();
-            unique.forEach(val => {
-              const opt = document.createElement('option');
-              opt.value = val;
-              opt.textContent = val;
-              select.appendChild(opt);
-            });
-
-            if (selected && unique.includes(selected)) {
-              select.value = selected;
-            }
-          };
-
-          updateDropdown('ServerUsername', 'username');
-          updateDropdown('ServerFunctionality', 'functionality');
-          updateDropdown('ServerPlatform', 'platform_name');
+          select.trigger('change.select2'); // force update Select2 UI
         };
 
-        // Trigger redraw logic only AFTER table draw
-        api.on('draw', () => {
-          filterDependencies();
+        // Inisialisasi dropdown awal
+        createSearchableDropdown(5, '.server_username', 'ServerUsername', 'Pilih Username');
+        createSearchableDropdown(6, '.server_functionality', 'ServerFunctionality', 'Pilih Functionality');
+        createSearchableDropdown(7, '.server_platform', 'ServerPlatform', 'Pilih Platform');
+
+        // Update saat redraw
+        api.on('draw', function () {
+          updateSearchableDropdown('ServerUsername', 5, 'username');
+          updateSearchableDropdown('ServerFunctionality', 6, 'functionality');
+          updateSearchableDropdown('ServerPlatform', 7, 'platform_name');
         });
 
-        // Clear button
+        // Clear filter
         document.getElementById('clearFilterBtn')?.addEventListener('click', function () {
-          document.getElementById('ServerUsername').value = '';
-          document.getElementById('ServerFunctionality').value = '';
-          document.getElementById('ServerPlatform').value = '';
-
-          api.columns().search('').draw(); // clear all filters
+          $('#ServerUsername, #ServerFunctionality, #ServerPlatform').val('').trigger('change');
+          api.columns().search('').draw();
         });
       }
     });
@@ -574,36 +634,3 @@ document.addEventListener('DOMContentLoaded', function (e) {
     });
   }, 100);
 });
-function filterDependencies() {
-  const api = dt_user;
-  const filteredData = api.rows({ search: 'applied' }).data().toArray();
-
-  const updateOptions = (selectId, dataKey) => {
-    const select = document.getElementById(selectId);
-    const selectedVal = select.value;
-    const defaultText = select.options[0]?.text || dataKey;
-
-    // Clear all options except the default
-    select.innerHTML = `<option value="">${defaultText}</option>`;
-
-    // Get unique values from filtered data
-    const uniqueValues = [...new Set(filteredData.map(row => row[dataKey]))].sort();
-
-    uniqueValues.forEach(val => {
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = val;
-      select.appendChild(opt);
-    });
-
-    // Restore previous selected value if still available
-    if (selectedVal && uniqueValues.includes(selectedVal)) {
-      select.value = selectedVal;
-    }
-  };
-
-  // Perbarui SEMUA dropdown filter berdasarkan data yang sudah terfilter
-  updateOptions('ServerUsername', 'username');
-  updateOptions('ServerFunctionality', 'functionality');
-  updateOptions('ServerPlatform', 'platform_name');
-}

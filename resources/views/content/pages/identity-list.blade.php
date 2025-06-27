@@ -1,17 +1,17 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'List Server')
+@section('title', 'List Identity')
 
 @section('vendor-style')
-  @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss'])
+  @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 @endsection
 
 @section('vendor-script')
-  @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleave-zen/cleave-zen.js'])
+  @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleave-zen/cleave-zen.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
 @section('page-script')
-  @vite('resources/assets/js/server-list.js')
+  @vite('resources/assets/js/identity-list.js')
 @endsection
 
 @section('content')
@@ -104,13 +104,34 @@
   <!-- Users List Table -->
   <div class="card">
     <div class="card-header border-bottom custom-header-bg">
-    <h3 class="card-title mb-0 text-center text-white">List Server</h3>
-    <div class="d-flex justify-content-between align-items-center row pt-0 gap-md-0 g-6">
-      <div class="col-md-4 user_role"></div>
-      <div class="col-md-4 user_plan"></div>
-      <div class="col-md-4 user_status"></div>
+    <h3 class="card-title mb-0 text-center text-white">List Identity</h3>
+    </div>
+
+    <!-- Collapsible filter -->
+    <div class="card-header">
+    <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#serverFilters"
+      aria-expanded="true">
+      <span class="icon-base bx bx-filter icon-sm me-2"></span>Filter <i class="bx bx-chevron-down"></i>
+    </button>
+    </div>
+
+    <div class="collapse" id="serverFilters">
+    <div class="card-body">
+      <div class="row g-4">
+      <div class="col-md-4 server_username"></div>
+      <div class="col-md-4 server_functionality"></div>
+      <div class="col-md-4 server_platform"></div>
+      </div>
+      <div>
+      <button type="button" id="clearFilterBtn" class="btn btn-warning mt-4">
+        <span class="icon-base bx bx-reset icon-sm me-2"></span>Hapus Filter
+      </button>
+      </div>
     </div>
     </div>
+
+    <hr class="my-4 border-gray-600" />
+
     <div class="card-datatable">
     <table class="datatables-users table border-top">
       <thead class="table-light">
@@ -134,30 +155,18 @@
         <span class="dt-column-title" role="button">Username</span>
         </th>
 
-        <th data-dt-column="5" class="sorting" tabindex="0" aria-label="Functionality: Activate to sort">
+        <th data-dt-column="6" class="sorting" tabindex="0" aria-label="Functionality: Activate to sort">
         <span class="dt-column-title" role="button">Functionality</span>
         </th>
 
-        <th data-dt-column="6" class="sorting" tabindex="0" aria-label="Platform: Activate to sort">
+        <th data-dt-column="7" class="sorting" tabindex="0" aria-label="Platform: Activate to sort">
         <span class="dt-column-title" role="button">Platform</span>
         </th>
-        <th data-dt-column="7" class="dt-orderable-none" tabindex="-1" aria-label="Actions: Not sortable">
+        <th data-dt-column="8" class="dt-orderable-none" tabindex="-1" aria-label="Actions: Not sortable">
         <span class="dt-column-title">Actions</span>
         </th>
       </tr>
       </thead>
-
-      <!-- Filter placeholders -->
-      <div class="server-filters mt-8 container">
-      <div class="server_username"></div>
-      <div class="server_functionality"></div>
-      <div class="server_platform"></div>
-      <div>
-        <button type="button" id="clearFilterBtn" class="btn btn-outline-secondary">
-        Clear Filter
-        </button>
-      </div>
-      </div>
     </table>
     </div>
   </div>
