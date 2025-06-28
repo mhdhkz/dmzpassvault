@@ -163,12 +163,11 @@ $(function () {
     });
   }
 
-  const fieldsToTrim = ['#multicol-username', '#multicol-ipaddr', '#multicol-functionality', '#multicol-hostname'];
+  const fieldsToTrim = ['#multicol-username', '#multicol-ipaddr', '#multicol-hostname'];
 
   fieldsToTrim.forEach(selector => {
     $(document).on('input blur', selector, function () {
-      this.value = this.value.replace(/^\s+/, ''); // Cegah leading space
-      this.value = this.value.trim(); // Hapus leading/trailing
+      this.value = this.value.replace(/^\s+|\s+$/g, '');
     });
   });
 

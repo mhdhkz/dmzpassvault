@@ -170,5 +170,8 @@
     </table>
     </div>
   </div>
-
+  @include('_partials/_modals/modal-edit-identity', ['platforms' => \App\Models\Platform::all()])
+  <script>
+    window.platformList = @json($platforms->pluck('name', 'id'));
+  </script>
 @endsection

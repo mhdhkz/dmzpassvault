@@ -11,8 +11,6 @@ use App\Http\Controllers\appcore\IdentityController;
 use Illuminate\Http\Request;
 
 
-
-
 // Unaunthenticated Access
 Route::get('/', [Landing::class, 'index'])->name('pages-landing');
 Route::post('/register', [RegisterController::class, 'store'])->name('registerresponse');
@@ -21,12 +19,17 @@ Route::post('/register', [RegisterController::class, 'store'])->name('registerre
 Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::get('/dashboard', [Dashboard::class, 'index'])->name('dashboard');
   Route::get('/page-2', [Page2::class, 'index'])->name('pages-page-2');
+
   //identity-part
   Route::get('/identity/identity-list', [IdentityList::class, 'index'])->name('identity-identity-list');
   Route::get('/identity/list/data', [IdentityController::class, 'getListData']);
   Route::get('/identity/identity-form', [IdentityController::class, 'identityForm'])->name('identity-identity-form');
   Route::post('/identity/store/data', [IdentityController::class, 'store'])->name('identities.store');
   Route::post('/identity/delete/multiple', [IdentityController::class, 'deleteMultiple']);
+  Route::delete('/identity/delete/{id}', [IdentityController::class, 'destroy']);
+  Route::get('/identity/detail/{id}', [IdentityController::class, 'show']);
+  Route::put('/identity/{id}', [IdentityController::class, 'update'])->name('identity.update');
+  Route::get('/identity/{id}/activity-log', [IdentityController::class, 'activityLog']);
   Route::post('/identity/check-hostname', function (Request $request) {
     $exists = \App\Models\Identity::where('hostname', $request->hostname)->exists();
     return response()->json(['exists' => $exists]);

@@ -13,21 +13,58 @@ document.addEventListener('DOMContentLoaded', function (e) {
   headingColor = config.colors.headingColor;
 
   // Variable declaration for table
-  const dt_user_table = document.querySelector('.datatables-users'),
-    userView = baseUrl + 'app/user/view/account';
+  const dt_user_table = document.querySelector('.datatables-users');
   var select2 = $('.select2');
+
+  // Inisialisasi toast swal
+  const showSuccessToast = msg => {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'colored-toast'
+      },
+      didOpen: toast => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+    Toast.fire({ icon: 'success', title: msg });
+  };
+
+  const showErrorToast = msg => {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'colored-toast'
+      },
+      didOpen: toast => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+    Toast.fire({ icon: 'error', title: msg });
+  };
 
   if (select2.length) {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
-      placeholder: 'Select Country',
+      placeholder: 'Pilih platform',
       dropdownParent: $this.parent()
     });
   }
 
   // Users datatable
+  let dt_user;
   if (dt_user_table) {
-    const dt_user = new DataTable(dt_user_table, {
+    dt_user = new DataTable(dt_user_table, {
       ajax: '/identity/list/data',
       processing: true,
       orderMulti: false,
@@ -41,6 +78,8 @@ document.addEventListener('DOMContentLoaded', function (e) {
         { data: 'username' },
         { data: 'functionality' },
         { data: 'platform_name' },
+        { data: 'platform_id', visible: false },
+        { data: 'description', visible: false },
         { data: 'action' }
       ],
       columnDefs: [
@@ -138,16 +177,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
                 <a href="javascript:;" class="btn btn-icon delete-record">
                   <i class="icon-base bx bx-trash icon-md"></i>
                 </a>
-                <a href="${userView}" class="btn btn-icon">
+                <a href="javascript:;" class="btn btn-icon btn-view-record" data-id="${full.id}">
                   <i class="icon-base bx bx-show icon-md"></i>
                 </a>
-                <a href="javascript:;" class="btn btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                  <i class="icon-base bx bx-dots-vertical-rounded icon-md"></i>
+                <a href="javascript:;" class="btn btn-icon btn-edit-identity"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editIdentity"
+                  data-id="${full.id}"
+                  data-hostname="${full.hostname}"
+                  data-ip_addr_srv="${full.ip_addr_srv}"
+                  data-username="${full.username}"
+                  data-functionality="${full.functionality}"
+                  data-platform_id="${full.platform_id}"
+                  data-description="${full.description ?? ''}">
+                  <i class="icon-base bx bx-edit icon-md"></i>
                 </a>
-                <div class="dropdown-menu dropdown-menu-end m-0">
-                  <a href="javascript:;" class="dropdown-item">Edit</a>
-                  <a href="javascript:;" class="dropdown-item">Suspend</a>
-                </div>
               </div>
             `;
           }
@@ -546,13 +590,72 @@ document.addEventListener('DOMContentLoaded', function (e) {
 
     //? The 'delete-record' class is necessary for the functionality of the following code.
     function deleteRecord(event) {
-      let row = document.querySelector('.dtr-expanded');
-      if (event) {
-        row = event.target.parentElement.closest('tr');
-      }
-      if (row) {
-        dt_user.row(row).remove().draw();
-      }
+      const button = event.target.closest('.delete-record');
+      const rowElement = button.closest('tr');
+      const rowData = dt_user.row(rowElement).data();
+      const id = rowData?.id;
+
+      if (!id) return;
+
+      Swal.fire({
+        title: 'Yakin hapus data ini?',
+        text: 'Tindakan ini tidak dapat dibatalkan!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, hapus',
+        cancelButtonText: 'Batal',
+        customClass: {
+          confirmButton: 'btn btn-danger mx-2',
+          cancelButton: 'btn btn-outline-secondary mx-2'
+        },
+        buttonsStyling: false
+      }).then(result => {
+        if (!result.isConfirmed) return;
+
+        fetch(`/identity/delete/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+          }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              dt_user.row(rowElement).remove().draw();
+
+              const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                customClass: {
+                  popup: 'colored-toast'
+                },
+                didOpen: toast => {
+                  toast.addEventListener('mouseenter', Swal.stopTimer);
+                  toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+              });
+
+              Toast.fire({
+                icon: 'success',
+                title: 'Data berhasil dihapus'
+              });
+            } else {
+              throw new Error(data.message || 'Gagal menghapus');
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Gagal menghapus',
+              text: err.message || 'Terjadi kesalahan saat menghapus data'
+            });
+          });
+      });
     }
 
     function bindDeleteEvent() {
@@ -581,8 +684,76 @@ document.addEventListener('DOMContentLoaded', function (e) {
       }
     }
 
+    function bindViewEvent() {
+      const tableBody = document.querySelector('.datatables-users tbody');
+      if (tableBody) {
+        tableBody.addEventListener('click', function (event) {
+          const btn = event.target.closest('.btn-view-record');
+          if (btn) {
+            const id = btn.getAttribute('data-id');
+            if (id) {
+              window.location.href = `/identity/detail/${id}`;
+            }
+          }
+        });
+      }
+    }
+
+    function bindEditEvent() {
+      const table = document.querySelector('.datatables-users');
+      if (!table) return;
+
+      table.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-edit-identity');
+        if (!btn) return;
+
+        // Ambil data-* dari tombol
+        const id = btn.dataset.id;
+        const hostname = btn.dataset.hostname;
+        const ip = btn.dataset.ip_addr_srv;
+        const username = btn.dataset.username;
+        const functionality = btn.dataset.functionality;
+        const platformId = btn.dataset.platform_id;
+        const description = btn.dataset.description;
+
+        // Target modal dan form
+        const modal = document.getElementById('editIdentity');
+
+        // Prefill field modal
+        modal.querySelector('#editIdentityId').value = id;
+        modal.querySelector('#editHostname').value = hostname;
+        modal.querySelector('#editIpAddress').value = ip;
+        modal.querySelector('#editUsername').value = username;
+        modal.querySelector('#editFunctionality').value = functionality;
+        modal.querySelector('#editDescription').value = description;
+
+        // Re-populate Select2 platform
+        const select = modal.querySelector('#editPlatform');
+        if (select && window.platformList && platformId) {
+          select.innerHTML = '';
+          for (const [key, value] of Object.entries(window.platformList)) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = value;
+            if (parseInt(key) === parseInt(platformId)) {
+              opt.selected = true;
+            }
+            select.appendChild(opt);
+          }
+
+          // Re-init Select2
+          $(select).select2({
+            dropdownParent: $('#editIdentity'),
+            width: '100%'
+          });
+        }
+      });
+    }
+
     // Initial event binding
     bindDeleteEvent();
+    bindViewEvent();
+    bindEditEvent();
 
     // Re-bind events when modal is shown or hidden
     document.addEventListener('show.bs.modal', function (event) {
@@ -600,6 +771,46 @@ document.addEventListener('DOMContentLoaded', function (e) {
     // To remove default btn-secondary in export buttons
     $('.dt-buttons > .btn-group > button').removeClass('btn-secondary');
   }
+
+  // Handle form submit untuk edit identity
+  document.querySelector('#editIdentityForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const id = form.querySelector('#editIdentityId').value;
+
+    const data = {
+      hostname: form.querySelector('#editHostname').value,
+      ip_addr_srv: form.querySelector('#editIpAddress').value,
+      username: form.querySelector('#editUsername').value,
+      functionality: form.querySelector('#editFunctionality').value,
+      platform_id: form.querySelector('#editPlatform').value,
+      description: form.querySelector('#editDescription').value
+    };
+
+    fetch(`/identity/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify(data)
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          $('#editIdentity').modal('hide');
+          Swal.fire('Berhasil', 'Data berhasil diperbarui', 'success');
+          dt_user.ajax.reload();
+        } else {
+          Swal.fire('Gagal', 'Gagal memperbarui data', 'error');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        Swal.fire('Error', 'Terjadi kesalahan saat mengirim data', 'error');
+      });
+  });
 
   // Filter form control to default size
   // ? setTimeout used for user-list table initialization

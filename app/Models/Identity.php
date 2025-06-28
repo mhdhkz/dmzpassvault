@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Identity extends Model
 {
@@ -18,13 +19,30 @@ class Identity extends Model
     'username',
     'functionality',
     'description',
-    'platform_id'
+    'platform_id',
+    'created_by',
+    'updated_by'
   ];
 
-  protected $with = ['platform'];
+  protected $with = ['platform', 'createdBy', 'updatedBy'];
 
-  public function platform()
+  public function platform(): BelongsTo
   {
     return $this->belongsTo(Platform::class, 'platform_id', 'id');
+  }
+
+  public function createdBy(): BelongsTo
+  {
+    return $this->belongsTo(\App\Models\User::class, 'created_by');
+  }
+
+  public function updatedBy(): BelongsTo
+  {
+    return $this->belongsTo(\App\Models\User::class, 'updated_by');
+  }
+
+  public function auditLogs()
+  {
+    return $this->hasMany(PasswordAuditLog::class);
   }
 }

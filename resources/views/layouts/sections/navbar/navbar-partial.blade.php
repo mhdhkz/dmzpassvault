@@ -1,6 +1,7 @@
 @php
   use Illuminate\Support\Facades\Auth;
   use Illuminate\Support\Facades\Route;
+  use Illuminate\Support\Str;
 @endphp
 
 <!--  Brand demo (display only for navbar-full and hide on below xl) -->
@@ -95,8 +96,22 @@
       <li class="nav-item navbar-dropdown dropdown-user dropdown">
         <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
           <div class="avatar avatar-online">
-            <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : asset('assets/img/avatars/1.png') }}" alt
-              class="w-px-40 h-auto rounded-circle" />
+            @php
+        $user = Auth::user();
+        $name = $user?->name ?? 'Guest User';
+        $initials = collect(explode(' ', $name))->map(fn($n) => strtoupper($n[0]))->join('');
+      @endphp
+
+            @if ($user && $user->profile_photo_path)
+        <img src="{{ $user->profile_photo_url }}" alt="{{ $name }}" class="w-px-40 h-auto rounded-circle" />
+      @else
+        <span
+          class="avatar-initial rounded-circle bg-label-primary d-flex align-items-center justify-content-center text-uppercase fw-semibold"
+          style="width: 40px; height: 40px;">
+          {{ Str::limit($initials, 2, '') }}
+        </span>
+      @endif
+
           </div>
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -106,8 +121,22 @@
               <div class="d-flex">
                 <div class="flex-shrink-0 me-3">
                   <div class="avatar avatar-online">
-                    <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : asset('assets/img/avatars/1.png') }}"
-                      alt class="w-px-40 h-auto rounded-circle" />
+                    @php
+            $user = Auth::user();
+            $name = $user?->name ?? 'Guest User';
+            $initials = collect(explode(' ', $name))->map(fn($n) => strtoupper($n[0]))->join('');
+            @endphp
+
+                    @if ($user && $user->profile_photo_path)
+            <img src="{{ $user->profile_photo_url }}" alt="{{ $name }}" class="w-px-40 h-auto rounded-circle" />
+          @else
+            <span
+              class="avatar-initial rounded-circle bg-label-primary d-flex align-items-center justify-content-center text-uppercase fw-semibold"
+              style="width: 40px; height: 40px;">
+              {{ Str::limit($initials, 2, '') }}
+            </span>
+          @endif
+
                   </div>
                 </div>
                 <div class="flex-grow-1">

@@ -22,9 +22,13 @@ return new class extends Migration {
       $table->string('username', 100);
       $table->string('functionality', 100)->nullable();
       $table->text('description')->nullable();
+      $table->unsignedBigInteger('created_by')->nullable();
+      $table->unsignedBigInteger('updated_by')->nullable();
       $table->timestamps();
 
       $table->foreign('platform_id')->references('id')->on('platforms')->onDelete('cascade');
+      $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+      $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
     });
 
     Schema::create('password_vaults', function (Blueprint $table) {
@@ -53,16 +57,41 @@ return new class extends Migration {
 
     Schema::create('password_audit_logs', function (Blueprint $table) {
       $table->id();
+
+      // ID identity terkait
       $table->string('identity_id', 10);
-      $table->enum('event_type', ['created', 'updated', 'accessed']);
+
+      // Jenis peristiwa
+      $table->enum('event_type', [
+        'created',
+        'updated',
+        'rotated',
+        'requested',
+        'accessed'
+      ]);
+
+      // Waktu kejadian (boleh pakai default timestamp)
       $table->dateTime('event_time')->useCurrent();
-      $table->unsignedBigInteger('triggered_by')->nullable();
+
+      // User yang memicu event (null kalau oleh sistem)
+      $table->unsignedBigInteger('user_id')->nullable();
+
+      // Apakah dipicu user atau sistem
+      $table->enum('triggered_by', ['user', 'system'])->default('user');
+
+      // IP address pelaku (jika relevan)
       $table->string('actor_ip_addr', 45)->nullable();
+
+      // Catatan atau info tambahan opsional
+      $table->text('note')->nullable();
+
       $table->timestamps();
 
+      // Relasi
       $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
-      $table->foreign('triggered_by')->references('id')->on('users')->onDelete('set null');
+      $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
     });
+
   }
 
   public function down(): void

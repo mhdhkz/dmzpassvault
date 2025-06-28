@@ -1,0 +1,61 @@
+'use strict';
+
+document.addEventListener('DOMContentLoaded', function () {
+  const table = document.querySelector('.datatable-activity');
+  if (!table) return;
+
+  const identityId = table.dataset.identityId;
+
+  const dtActivity = new DataTable(table, {
+    ajax: `/identity/${identityId}/activity-log`,
+    processing: true,
+    serverSide: true,
+    columns: [
+      { data: 'DT_RowIndex', name: 'DT_RowIndex' },
+      { data: 'event_type', name: 'event_type' },
+      { data: 'event_time', name: 'event_time' },
+      { data: 'user', name: 'user' },
+      { data: 'actor_ip_addr', name: 'actor_ip_addr' }
+    ],
+    order: [[2, 'desc']],
+    columnDefs: [
+      {
+        targets: 0,
+        orderable: false,
+        searchable: false,
+        className: 'text-center'
+      },
+      {
+        targets: 1,
+        render: function (data) {
+          let badge = 'bg-label-secondary';
+          if (data === 'Dibuat') badge = 'bg-label-success';
+          else if (data === 'Diperbarui') badge = 'bg-label-warning';
+          else if (data === 'Diakses') badge = 'bg-label-info';
+
+          return `<span class="badge ${badge}">${data}</span>`;
+        }
+      }
+    ],
+    language: {
+      processing: `
+    <div class="d-flex justify-content-center align-items-center py-5">
+      <div class="sk-fold">
+        <div class="sk-fold-cube"></div>
+        <div class="sk-fold-cube"></div>
+        <div class="sk-fold-cube"></div>
+        <div class="sk-fold-cube"></div>
+      </div>
+    </div>
+  `,
+      search: 'Cari:',
+      lengthMenu: 'Tampilkan _MENU_ data',
+      info: 'Menampilkan _START_ - _END_ dari _TOTAL_ log',
+      paginate: {
+        next: '<i class="bx bx-chevron-right"></i>',
+        previous: '<i class="bx bx-chevron-left"></i>'
+      }
+    },
+    responsive: true
+  });
+});

@@ -3,10 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PasswordAuditLog extends Model
 {
-  protected $fillable = ['identity_id', 'event_type', 'event_time', 'triggered_by', 'actor_ip_addr'];
+  use HasFactory;
+
+  protected $fillable = [
+    'identity_id',
+    'event_type',
+    'event_time',
+    'user_id',
+    'triggered_by',
+    'actor_ip_addr',
+    'note',
+  ];
+
+  protected $casts = [
+    'event_time' => 'datetime',
+  ];
 
   public function identity()
   {
@@ -15,6 +30,6 @@ class PasswordAuditLog extends Model
 
   public function user()
   {
-    return $this->belongsTo(User::class, 'triggered_by');
+    return $this->belongsTo(User::class);
   }
 }

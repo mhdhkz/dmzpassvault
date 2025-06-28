@@ -29,6 +29,8 @@ class PlatformAndIdentitySeeder extends Seeder
         'username' => $isLinux ? 'root' : 'dbadmin',
         'functionality' => $isLinux ? 'Web Server App ' . chr(64 + $i) : 'DB Server App ' . chr(64 + $i),
         'description' => $isLinux ? 'Server backend aplikasi ' . chr(64 + $i) : 'Database untuk aplikasi ' . chr(64 + $i),
+        'created_by' => 1,
+        'updated_by' => 1,
         'created_at' => now(),
         'updated_at' => now(),
       ];
