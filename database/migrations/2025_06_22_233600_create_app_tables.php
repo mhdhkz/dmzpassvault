@@ -57,45 +57,54 @@ return new class extends Migration {
 
     Schema::create('password_audit_logs', function (Blueprint $table) {
       $table->id();
-
-      // ID identity terkait
       $table->string('identity_id', 10);
-
-      // Jenis peristiwa
-      $table->enum('event_type', [
-        'created',
-        'updated',
-        'rotated',
-        'requested',
-        'accessed'
-      ]);
-
-      // Waktu kejadian (boleh pakai default timestamp)
+      $table->enum('event_type', ['created', 'updated', 'rotated', 'requested', 'accessed']);
       $table->dateTime('event_time')->useCurrent();
-
-      // User yang memicu event (null kalau oleh sistem)
       $table->unsignedBigInteger('user_id')->nullable();
-
-      // Apakah dipicu user atau sistem
       $table->enum('triggered_by', ['user', 'system'])->default('user');
-
-      // IP address pelaku (jika relevan)
       $table->string('actor_ip_addr', 45)->nullable();
-
-      // Catatan atau info tambahan opsional
       $table->text('note')->nullable();
-
       $table->timestamps();
 
-      // Relasi
       $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
       $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
     });
 
+    Schema::create('password_requests', function (Blueprint $table) {
+      $table->id();
+      $table->string('request_id', 20)->unique();
+      $table->unsignedBigInteger('user_id');
+      $table->text('purpose')->nullable();
+      $table->integer('duration_minutes');
+      $table->enum('status', ['pending', 'approved', 'rejected', 'expired'])->default('pending');
+      $table->unsignedBigInteger('approved_by')->nullable();
+      $table->timestamp('approved_at')->nullable();
+      $table->timestamp('revealed_at')->nullable();
+      $table->unsignedBigInteger('revealed_by')->nullable();
+      $table->string('reveal_ip', 45)->nullable();
+      $table->timestamp('revoked_at')->nullable();
+      $table->timestamps();
+
+      $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+      $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
+      $table->foreign('revealed_by')->references('id')->on('users')->onDelete('set null');
+    });
+
+    Schema::create('request_identity', function (Blueprint $table) {
+      $table->id();
+      $table->unsignedBigInteger('password_request_id');
+      $table->string('identity_id', 10);
+      $table->timestamps();
+
+      $table->foreign('password_request_id')->references('id')->on('password_requests')->onDelete('cascade');
+      $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
+    });
   }
 
   public function down(): void
   {
+    Schema::dropIfExists('request_identity');
+    Schema::dropIfExists('password_requests');
     Schema::dropIfExists('password_audit_logs');
     Schema::dropIfExists('password_jobs');
     Schema::dropIfExists('password_vaults');

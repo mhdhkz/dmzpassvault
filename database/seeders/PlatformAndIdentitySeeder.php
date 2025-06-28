@@ -5,16 +5,19 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PlatformAndIdentitySeeder extends Seeder
 {
   public function run(): void
   {
+    // 1. Seed platform
     DB::table('platforms')->insert([
       ['id' => 'PF001', 'name' => 'Linux', 'description' => 'Linux-based server platform', 'created_at' => now(), 'updated_at' => now()],
       ['id' => 'PF002', 'name' => 'Database', 'description' => 'Database platform', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
+    // 2. Seed identities
     $identities = [];
 
     for ($i = 1; $i <= 25; $i++) {
@@ -37,5 +40,32 @@ class PlatformAndIdentitySeeder extends Seeder
     }
 
     DB::table('identities')->insert($identities);
+
+    // 3. Seed password_requests dan request_identity
+    $identityIds = array_column($identities, 'id');
+
+    for ($i = 1; $i <= 10; $i++) {
+      $prefix = 'REQ' . now()->format('ymd');
+      $requestId = $prefix . str_pad($i, 3, '0', STR_PAD_LEFT);
+
+      $prId = DB::table('password_requests')->insertGetId([
+        'request_id' => $requestId,
+        'user_id' => 1,
+        'purpose' => 'Akses untuk maintenance server ke-' . $i,
+        'duration_minutes' => rand(15, 60),
+        'status' => ['pending', 'approved', 'rejected', 'expired'][rand(0, 3)],
+        'created_at' => Carbon::now()->subDays(10 - $i),
+        'updated_at' => now()
+      ]);
+
+      foreach (collect($identityIds)->random(rand(1, 3)) as $identityId) {
+        DB::table('request_identity')->insert([
+          'password_request_id' => $prId,
+          'identity_id' => $identityId,
+          'created_at' => now(),
+          'updated_at' => now(),
+        ]);
+      }
+    }
   }
 }

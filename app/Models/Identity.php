@@ -45,4 +45,14 @@ class Identity extends Model
   {
     return $this->hasMany(PasswordAuditLog::class);
   }
+
+  public function requests()
+  {
+    return $this->belongsToMany(
+      \App\Models\PasswordRequest::class,
+      'request_identity',
+      'identity_id',
+      'password_request_id'
+    )->with(['user', 'approvedBy', 'revealedBy']);
+  }
 }

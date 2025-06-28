@@ -31,16 +31,22 @@
       "slug": "vault",
       "submenu": [
         {
-          "url": "/page-2",
-          "name": "Enkripsi",
-          "icon": "menu-icon icon-base bx bx-lock",
-          "slug": "vault-encryption"
+          "url": "/vault/vault-form",
+          "name": "Pengajuan Vault",
+          "icon": "menu-icon icon-base bx bx-food-menu",
+          "slug": "vault-vault-form"
         },
         {
-          "url": "/page-2",
+          "url": "/vault/vault-list",
+          "name": "List Pengajuan",
+          "icon": "menu-icon icon-base bx bx-detail",
+          "slug": "vault-vault-list"
+        },
+        {
+          "url": "/vault/vault-decrypt",
           "name": "Dekripsi",
           "icon": "menu-icon icon-base bx bx-lock-open-alt",
-          "slug": "vault-decryption"
+          "slug": "vault-vault-decrypt"
         }
       ]
     },

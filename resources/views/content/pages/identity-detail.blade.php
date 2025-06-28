@@ -36,7 +36,7 @@
         <div class="d-flex align-items-center flex-column mt-n4 mb-3">
           <div class="avatar" style="width: 70px; height: 70px;">
           <span
-            class="avatar-initial rounded-circle bg-label-primary text-heading d-inline-flex justify-content-center align-items-center"
+            class="mt-1 avatar-initial rounded-circle bg-label-primary text-heading d-inline-flex justify-content-center align-items-center"
             style="width: 100%; height: 100%; font-size: 24px;">
             {{ $initials }}
           </span>
@@ -86,6 +86,7 @@
           id="text-updated-at">{{ $identity->updated_at ? $identity->updated_at->format('d M Y H:i') : '-' }}</span>
         </li>
         </ul>
+        <hr class="my-4 border-gray-600" />
         <div class="d-flex justify-content-center">
         <a href="javascript:;" class="btn btn-primary me-4 btn-edit-identity" data-bs-target="#editIdentity"
           data-id="{{ $identity->id }}" data-hostname="{{ $identity->hostname }}"

@@ -61,6 +61,10 @@ textarea.form-control {
     min-height: calc(1.375em + 11rem + calc(var(--bs-border-width) * 2));
 }
 
+.vault-form textarea#purpose.form-control {
+    min-height: calc(1.375em + 5rem + calc(var(--bs-border-width) * 2));
+}
+
 .dataTables_processing {
   font-size: 0 !important;
   background: transparent !important;
@@ -183,4 +187,13 @@ div.dt-processing {
 
 .swal2-toast.colored-toast .swal2-icon-content {
   line-height: 2rem;
+}
+
+.swal2-toast.swal2-icon-success .swal2-success-circular-line-left,
+.swal2-toast.swal2-icon-success .swal2-success-circular-line-right {
+  background-color: transparent !important;
+}
+
+.swal2-toast.swal2-icon-success .swal2-success-fix {
+  background-color: transparent !important;
 }

@@ -14,9 +14,9 @@
     ],
     "VAULT": [
       {
-        "name": "Request Password",
-        "icon": "bx-key",
-        "url": "vault/request-password"
+        "name": "Decrypt Password",
+        "icon": "bx-lock-open-alt",
+        "url": "vault/decrypt"
       }
     ],
     "MANAJEMEN USER": [

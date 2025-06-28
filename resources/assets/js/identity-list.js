@@ -1,8 +1,18 @@
 /**
- * Page User List
+ * Page Identity List
  */
 
 'use strict';
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: toast => {
+    toast.classList.add('colored-toast');
+  }
+});
 
 // Datatable (js)
 document.addEventListener('DOMContentLoaded', function (e) {
@@ -17,40 +27,19 @@ document.addEventListener('DOMContentLoaded', function (e) {
   var select2 = $('.select2');
 
   // Inisialisasi toast swal
+
   const showSuccessToast = msg => {
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      customClass: {
-        popup: 'colored-toast'
-      },
-      didOpen: toast => {
-        toast.addEventListener('mouseenter', Swal.stopTimer);
-        toast.addEventListener('mouseleave', Swal.resumeTimer);
-      }
+    Toast.fire({
+      icon: 'success',
+      title: msg
     });
-    Toast.fire({ icon: 'success', title: msg });
   };
 
   const showErrorToast = msg => {
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      customClass: {
-        popup: 'colored-toast'
-      },
-      didOpen: toast => {
-        toast.addEventListener('mouseenter', Swal.stopTimer);
-        toast.addEventListener('mouseleave', Swal.resumeTimer);
-      }
+    Toast.fire({
+      icon: 'error',
+      title: msg
     });
-    Toast.fire({ icon: 'error', title: msg });
   };
 
   if (select2.length) {
@@ -271,20 +260,6 @@ document.addEventListener('DOMContentLoaded', function (e) {
                             dt_user.ajax.reload();
 
                             // Toast-style SweetAlert
-                            const Toast = Swal.mixin({
-                              toast: true,
-                              position: 'top-end',
-                              showConfirmButton: false,
-                              timer: 3000,
-                              timerProgressBar: true,
-                              customClass: {
-                                popup: 'colored-toast'
-                              },
-                              didOpen: toast => {
-                                toast.addEventListener('mouseenter', Swal.stopTimer);
-                                toast.addEventListener('mouseleave', Swal.resumeTimer);
-                              }
-                            });
 
                             Toast.fire({
                               icon: 'success',
@@ -624,21 +599,6 @@ document.addEventListener('DOMContentLoaded', function (e) {
             if (data.success) {
               dt_user.row(rowElement).remove().draw();
 
-              const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                customClass: {
-                  popup: 'colored-toast'
-                },
-                didOpen: toast => {
-                  toast.addEventListener('mouseenter', Swal.stopTimer);
-                  toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-              });
-
               Toast.fire({
                 icon: 'success',
                 title: 'Data berhasil dihapus'
@@ -658,113 +618,97 @@ document.addEventListener('DOMContentLoaded', function (e) {
       });
     }
 
-    function bindDeleteEvent() {
-      const userListTable = document.querySelector('.datatables-users');
-      const modal = document.querySelector('.dtr-bs-modal');
+    document.addEventListener('click', function (e) {
+      // Delete
+      const deleteBtn = e.target.closest('.delete-record');
+      if (deleteBtn) {
+        const row = deleteBtn.closest('tr');
+        const rowData = dt_user.row(row).data();
+        const id = rowData?.id;
 
-      if (userListTable && userListTable.classList.contains('collapsed')) {
-        if (modal) {
-          modal.addEventListener('click', function (event) {
-            if (event.target.parentElement.classList.contains('delete-record')) {
-              deleteRecord();
-              const closeButton = modal.querySelector('.btn-close');
-              if (closeButton) closeButton.click(); // Simulates a click on the close button
-            }
-          });
-        }
-      } else {
-        const tableBody = userListTable?.querySelector('tbody');
-        if (tableBody) {
-          tableBody.addEventListener('click', function (event) {
-            if (event.target.parentElement.classList.contains('delete-record')) {
-              deleteRecord(event);
-            }
-          });
-        }
-      }
-    }
+        if (!id) return;
 
-    function bindViewEvent() {
-      const tableBody = document.querySelector('.datatables-users tbody');
-      if (tableBody) {
-        tableBody.addEventListener('click', function (event) {
-          const btn = event.target.closest('.btn-view-record');
-          if (btn) {
-            const id = btn.getAttribute('data-id');
-            if (id) {
-              window.location.href = `/identity/detail/${id}`;
+        Swal.fire({
+          title: 'Yakin hapus data ini?',
+          text: 'Tindakan ini tidak dapat dibatalkan!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, hapus',
+          cancelButtonText: 'Batal',
+          customClass: {
+            confirmButton: 'btn btn-danger mx-2',
+            cancelButton: 'btn btn-outline-secondary mx-2'
+          },
+          buttonsStyling: false
+        }).then(result => {
+          if (!result.isConfirmed) return;
+
+          fetch(`/identity/delete/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             }
-          }
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                dt_user.ajax.reload();
+
+                Toast.fire({
+                  position: 'top-end',
+                  icon: 'success',
+                  title: 'Data berhasil dihapus',
+                  showConfirmButton: false,
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              } else {
+                throw new Error(data.message || 'Gagal menghapus');
+              }
+            })
+            .catch(err => {
+              Swal.fire('Gagal', err.message || 'Terjadi kesalahan saat menghapus', 'error');
+            });
         });
       }
-    }
 
-    function bindEditEvent() {
-      const table = document.querySelector('.datatables-users');
-      if (!table) return;
+      // View
+      const viewBtn = e.target.closest('.btn-view-record');
+      if (viewBtn) {
+        const id = viewBtn.dataset.id;
+        if (id) window.location.href = `/identity/detail/${id}`;
+      }
 
-      table.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-edit-identity');
-        if (!btn) return;
-
-        // Ambil data-* dari tombol
-        const id = btn.dataset.id;
-        const hostname = btn.dataset.hostname;
-        const ip = btn.dataset.ip_addr_srv;
-        const username = btn.dataset.username;
-        const functionality = btn.dataset.functionality;
-        const platformId = btn.dataset.platform_id;
-        const description = btn.dataset.description;
-
-        // Target modal dan form
+      // Edit
+      const editBtn = e.target.closest('.btn-edit-identity');
+      if (editBtn) {
         const modal = document.getElementById('editIdentity');
+        modal.querySelector('#editIdentityId').value = editBtn.dataset.id;
+        modal.querySelector('#editHostname').value = editBtn.dataset.hostname;
+        modal.querySelector('#editIpAddress').value = editBtn.dataset.ip_addr_srv;
+        modal.querySelector('#editUsername').value = editBtn.dataset.username;
+        modal.querySelector('#editFunctionality').value = editBtn.dataset.functionality;
+        modal.querySelector('#editDescription').value = editBtn.dataset.description;
 
-        // Prefill field modal
-        modal.querySelector('#editIdentityId').value = id;
-        modal.querySelector('#editHostname').value = hostname;
-        modal.querySelector('#editIpAddress').value = ip;
-        modal.querySelector('#editUsername').value = username;
-        modal.querySelector('#editFunctionality').value = functionality;
-        modal.querySelector('#editDescription').value = description;
-
-        // Re-populate Select2 platform
         const select = modal.querySelector('#editPlatform');
-        if (select && window.platformList && platformId) {
+        if (select && window.platformList && editBtn.dataset.platform_id) {
           select.innerHTML = '';
           for (const [key, value] of Object.entries(window.platformList)) {
             const opt = document.createElement('option');
             opt.value = key;
             opt.textContent = value;
-            if (parseInt(key) === parseInt(platformId)) {
+            if (parseInt(key) === parseInt(editBtn.dataset.platform_id)) {
               opt.selected = true;
             }
             select.appendChild(opt);
           }
 
-          // Re-init Select2
           $(select).select2({
             dropdownParent: $('#editIdentity'),
             width: '100%'
           });
         }
-      });
-    }
-
-    // Initial event binding
-    bindDeleteEvent();
-    bindViewEvent();
-    bindEditEvent();
-
-    // Re-bind events when modal is shown or hidden
-    document.addEventListener('show.bs.modal', function (event) {
-      if (event.target.classList.contains('dtr-bs-modal')) {
-        bindDeleteEvent();
-      }
-    });
-
-    document.addEventListener('hide.bs.modal', function (event) {
-      if (event.target.classList.contains('dtr-bs-modal')) {
-        bindDeleteEvent();
       }
     });
 
