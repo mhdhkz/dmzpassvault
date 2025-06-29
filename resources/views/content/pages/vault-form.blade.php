@@ -35,6 +35,14 @@
 
     <h6>1. Informasi Pengajuan</h6>
     <div class="row g-4">
+
+      <div class="mb-3">
+      <label class="form-label" for="preview-request-id">Request ID</label>
+      <div id="request-id-preview" class="form-control bg-light">
+        <span class="text-muted">Memuat...</span>
+      </div>
+      </div>
+
       <div class="col-md-12">
       <label class="form-label" for="purpose">Tujuan / Keperluan*</label>
       <textarea name="purpose" class="form-control" id="purpose" required

@@ -21,33 +21,43 @@ class PasswordRequestController extends Controller
 
   public function getListData(Request $request)
   {
-    $query = PasswordRequest::with(['user', 'identities', 'identities.platform'])->latest();
+    $query = PasswordRequest::with(['user', 'identities'])->latest();
 
     return DataTables::of($query)
       ->addIndexColumn()
+
       ->addColumn('request_id', fn($row) => $row->request_id)
-      ->addColumn('identity.hostname', function ($row) {
-        return $row->identities->isNotEmpty()
-          ? $row->identities->map(fn($i) => $i->hostname ?? '-')->implode(', ')
-          : '-';
+      ->addColumn('user.name', fn($row) => optional($row->user)->name ?? '-')
+      ->addColumn('created_at', fn($row) => optional($row->created_at)->format('Y-m-d H:i'))
+
+      ->addColumn('duration', function ($row) {
+        if (!$row->start_at || !$row->end_at)
+          return '-';
+
+        $diff = $row->start_at->diff($row->end_at);
+        return ($diff->d ? "{$diff->d} Days " : '') . ($diff->h ? "{$diff->h} Hrs" : '0 Hrs');
       })
-      ->addColumn('created_at', fn($row) => $row->created_at->format('d-m-Y H:i'))
-      ->addColumn('duration', fn($row) => $row->duration_minutes . ' menit')
+
       ->addColumn('status', fn($row) => ucfirst($row->status))
+
       ->addColumn('id', fn($row) => $row->id)
 
-      // === Tambahan ini penting untuk mendukung fitur search ===
-      ->filterColumn('request_id', function ($query, $keyword) {
-        $query->where('request_id', 'like', "%$keyword%");
-      })
-      ->filterColumn('identity.hostname', function ($query, $keyword) {
-        $query->whereHas('identities', function ($q) use ($keyword) {
-          $q->where('hostname', 'like', "%$keyword%");
-        });
-      })
-      ->filterColumn('status', function ($query, $keyword) {
-        $query->where('status', 'like', "%$keyword%");
-      })
+      // Filter kolom
+      ->filterColumn(
+        'request_id',
+        fn($query, $keyword) =>
+        $query->where('request_id', 'like', "%$keyword%")
+      )
+      ->filterColumn(
+        'user.name',
+        fn($query, $keyword) =>
+        $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$keyword%"))
+      )
+      ->filterColumn(
+        'status',
+        fn($query, $keyword) =>
+        $query->where('status', 'like', "%$keyword%")
+      )
 
       ->make(true);
   }
@@ -61,47 +71,73 @@ class PasswordRequestController extends Controller
 
   public function store(Request $request)
   {
-    $request->validate([
-      'identity_ids' => 'required|array',
-      'purpose' => 'required|string',
-      'duration_minutes' => 'required|integer|min:1'
+    $request->merge([
+      'purpose' => trim($request->purpose),
+      'duration_range' => trim($request->duration_range)
     ]);
 
-    DB::beginTransaction();
-    try {
-      $prefix = 'REQ' . now()->format('ymd');
-      $latest = PasswordRequest::where('request_id', 'like', "$prefix%")
-        ->orderByDesc('request_id')
-        ->first();
-      $seq = $latest ? intval(substr($latest->request_id, -3)) + 1 : 1;
-      $newId = $prefix . str_pad($seq, 3, '0', STR_PAD_LEFT);
+    $validated = $request->validate([
+      'purpose' => ['required', 'string', 'max:1200', 'not_regex:/^\s|\s$/'],
+      'duration_range' => ['required', 'string'],
+      'identity_ids' => ['required', 'array'],
+      'identity_ids.*' => ['exists:identities,id']
+    ]);
 
-      $req = PasswordRequest::create([
-        'request_id' => $newId,
-        'user_id' => Auth::id(),
-        'purpose' => $request->purpose,
-        'duration_minutes' => $request->duration_minutes,
+    // Ubah ke menit + ambil waktu mulai dan akhir
+    [$start, $end] = explode(' - ', $validated['duration_range']);
+    $startTime = \Carbon\Carbon::parse($start);
+    $endTime = \Carbon\Carbon::parse($end);
+    $durationMinutes = $startTime->diffInMinutes($endTime);
+
+    DB::beginTransaction();
+
+    try {
+      // Generate request_id dengan format REQYYMMDDNNN
+      $todayPrefix = now()->format('ymd'); // YYMMDD
+      $prefix = 'REQ' . $todayPrefix;
+
+      $last = PasswordRequest::where('request_id', 'like', "$prefix%")
+        ->orderByDesc('request_id')
+        ->lockForUpdate()
+        ->first();
+
+      $nextNumber = $last ? ((int) substr($last->request_id, -3)) + 1 : 1;
+      $nextId = $prefix . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
+      $passwordRequest = PasswordRequest::create([
+        'request_id' => $nextId,
+        'user_id' => auth()->id(),
+        'purpose' => $validated['purpose'],
+        'duration_minutes' => $durationMinutes,
+        'start_at' => $startTime,
+        'end_at' => $endTime,
+        'status' => 'pending'
       ]);
 
-      foreach ($request->identity_ids as $identityId) {
-        RequestIdentity::create([
-          'password_request_id' => $req->id,
-          'identity_id' => $identityId
-        ]);
-      }
+      $passwordRequest->identities()->attach($validated['identity_ids']);
 
       DB::commit();
-      return redirect()->route('vault.list')->with('success', 'Request berhasil dibuat.');
+
+      return back()->with('success', 'Permintaan berhasil dikirim.');
     } catch (\Exception $e) {
-      DB::rollback();
-      return back()->withErrors(['msg' => 'Gagal menyimpan request: ' . $e->getMessage()]);
+      DB::rollBack();
+      return back()->withErrors(['db' => 'Gagal menyimpan request.'])->withInput();
     }
   }
 
+
   public function show($id)
   {
-    $request = PasswordRequest::with(['user', 'identities.platform'])->findOrFail($id);
-    $identity = $request->identities->first(); // ← Tanpa typo
+    $request = PasswordRequest::with(['user', 'identities.platform', 'approvedBy', 'revealedBy'])->findOrFail($id);
+
+    // Tambahkan durasi (agar tersedia di blade)
+    $diff = $request->start_at->diff($request->end_at);
+
+    $request->duration_friendly = ($diff->d ? "{$diff->d} Days " : '0 Days ') .
+      ($diff->h ? "{$diff->h} Hours" : '0 Hours');
+
+
+    $identity = $request->identities->first();
 
     $timelineLogs = [];
 
@@ -120,6 +156,7 @@ class PasswordRequestController extends Controller
       'platforms' => \App\Models\Platform::all()
     ]);
   }
+
 
 
   public function approve($id)
@@ -169,20 +206,30 @@ class PasswordRequestController extends Controller
   public function update(Request $request, $id)
   {
     $request->validate([
-      'purpose' => 'required|string|max:1200',
-      'start_time' => 'required|date|before_or_equal:end_time',
-      'end_time' => 'required|date|after_or_equal:start_time',
-      'duration_minutes' => 'required|integer|min:1|max:7200' // 5 hari = 7200 menit
+      'purpose' => ['required', 'string', 'max:1200', 'not_regex:/^\s|\s$/'],
+      'duration_range' => ['required', 'string']
     ]);
+
+    [$startAt, $endAt] = explode(' - ', $request->duration_range);
+    $startAt = \Carbon\Carbon::parse($startAt);
+    $endAt = \Carbon\Carbon::parse($endAt);
+
+    if ($startAt->gt($endAt)) {
+      return response()->json([
+        'error' => 'Waktu mulai tidak boleh setelah waktu selesai.'
+      ], 422);
+    }
+
+    $durationMinutes = $startAt->diffInMinutes($endAt);
 
     $vault = PasswordRequest::findOrFail($id);
 
     $vault->update([
-      'purpose' => $request->purpose,
-      'duration_minutes' => $request->duration_minutes,
-      'start_time' => $request->start_time,
-      'end_time' => $request->end_time,
-      'updated_by' => Auth::id()
+      'purpose' => trim($request->purpose),
+      'start_at' => $startAt,
+      'end_at' => $endAt,
+      'duration_minutes' => $durationMinutes,
+      'updated_at' => now()
     ]);
 
     return response()->json([
@@ -202,6 +249,34 @@ class PasswordRequestController extends Controller
     $request->delete();
 
     return response()->json(['success' => true, 'message' => 'Request berhasil dihapus.']);
+  }
+
+  public function getNextRequestId()
+  {
+    $todayPrefix = now()->format('ymd');
+    $prefix = 'REQ' . $todayPrefix;
+
+    $last = PasswordRequest::where('request_id', 'like', "$prefix%")
+      ->orderByDesc('request_id')
+      ->first();
+
+    $nextNumber = $last ? ((int) substr($last->request_id, -3)) + 1 : 1;
+    $nextId = $prefix . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
+    return response()->json(['next_id' => $nextId]);
+  }
+  public function getJson($id)
+  {
+    $request = PasswordRequest::findOrFail($id);
+
+    return response()->json([
+      'id' => $request->id,
+      'request_id' => $request->request_id,
+      'purpose' => $request->purpose,
+      'start_at' => $request->start_at->format('Y-m-d H:i'),
+      'end_at' => $request->end_at->format('Y-m-d H:i'),
+      'status' => $request->status
+    ]);
   }
 
 }

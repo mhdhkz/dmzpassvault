@@ -39,39 +39,6 @@
     <div class="card-header border-bottom custom-header-bg">
     <h3 class="card-title mb-0 text-center text-white">List Pengajuan Vault</h3>
     </div>
-
-    <!-- Filter -->
-    <div class="card-header">
-    <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#vaultFilters"
-      aria-expanded="true">
-      <span class="icon-base bx bx-filter icon-sm me-2"></span>Filter <i class="bx bx-chevron-down"></i>
-    </button>
-    </div>
-
-    <div class="collapse" id="vaultFilters">
-    <div class="card-body">
-      <div class="row g-4">
-      <div class="col-md-4">
-        <label for="filter-status" class="form-label">Status</label>
-        <select id="filter-status" class="form-select select2" data-placeholder="Pilih Status">
-        <option value="">Semua Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-        <option value="expired">Expired</option>
-        </select>
-      </div>
-      </div>
-      <div>
-      <button type="button" id="clearFilterBtn" class="btn btn-warning mt-4">
-        <span class="icon-base bx bx-reset icon-sm me-2"></span>Hapus Filter
-      </button>
-      </div>
-    </div>
-    </div>
-
-    <hr class="my-4 border-gray-600" />
-
     <!-- DataTable -->
     <div class="card-datatable">
     <table class="datatables-users table border-top">
@@ -81,7 +48,7 @@
         <th data-dt-column="1" class="dt-orderable-none" aria-label="Checkbox: Not sortable"></th>
         <th data-dt-column="2" class="dt-orderable-none">No</th>
         <th data-dt-column="3"><span class="dt-column-title">ID Pengajuan</span></th>
-        <th data-dt-column="4"><span class="dt-column-title">Server</span></th>
+        <th data-dt-column="4"><span class="dt-column-title">User Pemohon</span></th>
         <th data-dt-column="5"><span class="dt-column-title">Waktu Request</span></th>
         <th data-dt-column="6"><span class="dt-column-title">Durasi</span></th>
         <th data-dt-column="7"><span class="dt-column-title">Status</span></th>
@@ -91,5 +58,6 @@
     </table>
     </div>
   </div>
+
   @include('_partials._modals.modal-edit-vault')
 @endsection

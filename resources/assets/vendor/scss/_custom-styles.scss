@@ -62,7 +62,7 @@ textarea.form-control {
 }
 
 .vault-form textarea#purpose.form-control {
-    min-height: calc(1.375em + 5rem + calc(var(--bs-border-width) * 2));
+    min-height: calc(1.375em + 2rem + calc(var(--bs-border-width) * 2));
 }
 
 .dataTables_processing {

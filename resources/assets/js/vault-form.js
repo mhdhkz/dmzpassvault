@@ -1,7 +1,7 @@
 $(function () {
   // Inisialisasi Select2
   $('.select2').each(function () {
-    var $this = $(this);
+    const $this = $(this);
     $this.wrap('<div class="position-relative"></div>').select2({
       placeholder: 'Pilih Identity',
       dropdownParent: $this.parent()
@@ -16,14 +16,13 @@ $(function () {
       timePicker24Hour: true,
       locale: {
         format: 'YYYY-MM-DD HH:mm',
+        separator: ' - ',
         applyLabel: 'Pilih',
         cancelLabel: 'Batal'
       },
       autoUpdateInput: true,
       minDate: moment(),
-      maxSpan: {
-        days: 5
-      }
+      maxSpan: { days: 5 }
     });
   }
 
@@ -45,55 +44,6 @@ $(function () {
     });
   }
 
-  // Validasi hostname dan IP
-  const $form = $('form');
-  const $hostnameInput = $('#multicol-hostname');
-  const $ipInput = $('#multicol-ipaddr');
-  const token = $('input[name="_token"]').val();
-
-  const $hostnameError = $('<small class="text-danger d-block mt-1" id="hostname-error"></small>');
-  const $ipError = $('<small class="text-danger d-block mt-1" id="ip-error"></small>');
-
-  $hostnameInput.after($hostnameError);
-  $ipInput.after($ipError);
-
-  let hostnameTimer, ipTimer;
-  const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})(\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})){3}$/;
-
-  $hostnameInput.on('input', function () {
-    clearTimeout(hostnameTimer);
-    const hostname = $(this).val().trim();
-    if (hostname !== '') {
-      hostnameTimer = setTimeout(() => {
-        $.post('/identity/check-hostname', { hostname, _token: token }, function (data) {
-          $hostnameError.text(data.exists ? 'Hostname sudah didaftarkan, silakan pilih nama lain.' : '');
-        });
-      }, 500);
-    } else {
-      $hostnameError.text('');
-    }
-  });
-
-  $ipInput.on('input', function () {
-    clearTimeout(ipTimer);
-    const ip = $(this).val().trim();
-
-    if (ip && !ipv4Regex.test(ip)) {
-      $ipError.text('Format IP Address tidak valid! Contoh: 192.168.1.1');
-      return;
-    }
-
-    if (ip !== '') {
-      ipTimer = setTimeout(() => {
-        $.post('/identity/check-ip', { ip_addr_srv: ip, _token: token }, function (data) {
-          $ipError.text(data.exists ? 'IP Address sudah didaftarkan.' : '');
-        });
-      }, 500);
-    } else {
-      $ipError.text('');
-    }
-  });
-
   // Validasi saat submit
   const confirmColor = document.querySelector('#confirm-color');
   if (confirmColor) {
@@ -107,9 +57,7 @@ $(function () {
           title: 'Form Belum Lengkap',
           text: 'Silakan isi semua field yang wajib diisi.',
           icon: 'warning',
-          customClass: {
-            confirmButton: 'btn btn-warning'
-          }
+          customClass: { confirmButton: 'btn btn-warning' }
         });
 
         return;
@@ -137,9 +85,7 @@ $(function () {
             title: 'Pendaftaran server dibatalkan.',
             showConfirmButton: false,
             timer: 1500,
-            customClass: {
-              popup: 'colored-toast'
-            },
+            customClass: { popup: 'colored-toast' },
             toast: true,
             position: 'top-end'
           });
@@ -170,7 +116,6 @@ $(function () {
       }).then(result => {
         if (result.isConfirmed) {
           form.reset();
-
           $('.select2').val('').trigger('change');
           $('#purposeCharCount').text('1200 karakter tersisa');
 
@@ -181,54 +126,69 @@ $(function () {
             timer: 1200,
             toast: true,
             position: 'top-end',
-            customClass: {
-              popup: 'colored-toast'
-            }
+            customClass: { popup: 'colored-toast' }
           });
         }
       });
     });
   }
 
+  // Trim field penting
   const fieldsToTrim = ['#multicol-username', '#multicol-ipaddr', '#multicol-hostname'];
-
   fieldsToTrim.forEach(selector => {
     $(document).on('input blur', selector, function () {
       this.value = this.value.replace(/^\s+|\s+$/g, '');
     });
   });
 
-  // Validasi akhir submit (HTML5 dan error text)
-  $form.on('submit', function (e) {
-    // Trim semua field penting sekali lagi
+  // Validasi akhir saat submit
+  const $form = $('form');
+  $form.on('submit', function () {
     fieldsToTrim.forEach(selector => {
       const $field = $(selector);
       $field.val($field.val().trim());
     });
-
-    // Validasi custom
-    const hostnameError = $hostnameError.text().trim();
-    const ip = $ipInput.val().trim();
-    const ipFormatInvalid = ip && !ipv4Regex.test(ip);
-    const ipErrorText = $ipError.text().trim();
-
-    if (hostnameError !== '') {
-      e.preventDefault();
-      $hostnameInput.focus();
-      return;
-    }
-
-    if (ipFormatInvalid) {
-      e.preventDefault();
-      $ipError.text('Format IP Address tidak valid! Contoh: 192.168.1.1');
-      $ipInput.focus();
-      return;
-    }
-
-    if (ipErrorText !== '') {
-      e.preventDefault();
-      $ipInput.focus();
-      return;
-    }
   });
+
+  // Tampilkan toast jika ada session sukses
+  const toastMessage = $('meta[name="vault-success-message"]').attr('content');
+  if (toastMessage) {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      customClass: { popup: 'colored-toast' },
+      didOpen: toast => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+
+    Toast.fire({
+      icon: 'success',
+      title: toastMessage
+    });
+  }
+
+  // 🔵 Preview request ID
+  const previewEl = document.getElementById('request-id-preview');
+  if (previewEl) {
+    fetch('/vault/next-request-id')
+      .then(res => res.json())
+      .then(data => {
+        previewEl.textContent = data.next_id;
+
+        // Tambahkan input hidden untuk dikirim ke backend (optional)
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'request_id_preview';
+        hiddenInput.value = data.next_id;
+        previewEl.closest('form').appendChild(hiddenInput);
+      })
+      .catch(() => {
+        previewEl.innerHTML = '<span class="text-danger">Gagal memuat ID</span>';
+      });
+  }
 });

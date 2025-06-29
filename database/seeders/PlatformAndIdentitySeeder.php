@@ -48,12 +48,16 @@ class PlatformAndIdentitySeeder extends Seeder
       $prefix = 'REQ' . now()->format('ymd');
       $requestId = $prefix . str_pad($i, 3, '0', STR_PAD_LEFT);
 
+      $startAt = Carbon::now()->addDays($i);
+      $endAt = (clone $startAt)->addMinutes(rand(15, 60));
+
       $prId = DB::table('password_requests')->insertGetId([
         'request_id' => $requestId,
         'user_id' => 1,
         'purpose' => 'Akses untuk maintenance server ke-' . $i,
-        'duration_minutes' => rand(15, 60),
-        'status' => ['pending', 'approved', 'rejected', 'expired'][rand(0, 3)],
+        'start_at' => $startAt,
+        'end_at' => $endAt,
+        'status' => ['pending', 'approved', 'rejected'][rand(0, 3)],
         'created_at' => Carbon::now()->subDays(10 - $i),
         'updated_at' => now()
       ]);

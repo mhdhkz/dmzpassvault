@@ -4,6 +4,8 @@
 
 'use strict';
 
+let dtVault;
+
 document.addEventListener('DOMContentLoaded', function () {
   const dtTable = document.querySelector('.datatables-users');
 
@@ -27,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   if (dtTable) {
-    const dtVault = new DataTable(dtTable, {
+    dtVault = new DataTable(dtTable, {
       ajax: '/vault/data',
       processing: true,
       serverSide: true,
@@ -77,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'id', orderable: false, render: DataTable.render.select() },
         { data: null },
         { data: 'request_id' },
-        { data: 'identity.hostname' },
+        { data: 'user.name' },
         { data: 'created_at' },
         { data: 'duration' },
         { data: 'status' },
@@ -332,24 +334,6 @@ document.addEventListener('DOMContentLoaded', function () {
         tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
       }
     });
-
-    // Filter status
-    const filterStatus = document.querySelector('#filter-status');
-    if (filterStatus) {
-      filterStatus.addEventListener('change', function () {
-        dtVault.column(7).search(this.value).draw(); // kolom ke-7 = kolom status
-      });
-    }
-
-    // Tombol hapus filter
-    const clearFilterBtn = document.querySelector('#clearFilterBtn');
-    if (clearFilterBtn) {
-      clearFilterBtn.addEventListener('click', function () {
-        filterStatus.value = '';
-        $(filterStatus).trigger('change'); // jika pakai select2
-        dtVault.column(7).search('').draw();
-      });
-    }
 
     function approveRequest(id, isBatch = false) {
       Swal.fire({

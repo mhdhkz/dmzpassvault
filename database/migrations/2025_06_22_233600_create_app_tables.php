@@ -75,7 +75,8 @@ return new class extends Migration {
       $table->string('request_id', 20)->unique();
       $table->unsignedBigInteger('user_id');
       $table->text('purpose')->nullable();
-      $table->integer('duration_minutes');
+      $table->timestamp('start_at')->nullable();
+      $table->timestamp('end_at')->nullable();
       $table->enum('status', ['pending', 'approved', 'rejected', 'expired'])->default('pending');
       $table->unsignedBigInteger('approved_by')->nullable();
       $table->timestamp('approved_at')->nullable();

@@ -33,127 +33,93 @@
 @section('page-script')
   @vite([
     'resources/assets/js/modal-edit-vault.js',
-    'resources/assets/js/modal-edit-identity-vault.js',
     'resources/assets/js/vault-detail.js'
   ])
 @endsection
 
 @section('content')
-  <div class="row">
-    <!-- Identity Details -->
-    <div class="col-xl-6 col-lg-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-      <div class="user-avatar-section">
-        <div class="d-flex align-items-center flex-column">
-        @php
-      $hostnameText = $identity?->hostname ?? '';
-      $parts = preg_split('/[\s\-]+/', $hostnameText);
-      $initials = '';
-      foreach ($parts as $p) {
-        if (isset($p[0]))
-        $initials .= strtoupper($p[0]);
-        if (strlen($initials) === 2)
-        break;
-      }
-      @endphp
-        <div class="d-flex align-items-center flex-column mt-n4 mb-3">
-          <div class="avatar" style="width: 70px; height: 70px;">
-          <span
-            class="mt-1 avatar-initial rounded-circle bg-label-primary text-heading d-inline-flex justify-content-center align-items-center"
-            style="width: 100%; height: 100%; font-size: 24px;">
-            {{ $initials }}
-          </span>
-          </div>
-          <h5 class="mt-2 mb-0 text-center {{ !$hostnameText ? 'text-danger' : '' }}" style="font-size: 1.125rem;">
-          {{ $hostnameText ?: 'Identity has been deleted' }}
-          </h5>
-        </div>
-        </div>
-      </div>
-      <h5 class="pb-4 border-bottom mb-4">Details</h5>
-      <div class="info-container">
-        <ul class="list-unstyled mb-6">
-        <li class="mb-2"><span class="h6">Hostname:</span> <span
-          id="text-hostname">{{ $identity?->hostname ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">IP Address:</span> <span
-          id="text-ip">{{ $identity?->ip_addr_srv ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Username:</span> <span
-          id="text-username">{{ $identity?->username ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Functionality:</span> <span
-          id="text-functionality">{{ $identity?->functionality ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Platform:</span> <span
-          id="text-platform">{{ $identity?->platform?->name ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Created By:</span> <span>{{ $identity?->createdBy?->name ?? '-' }}</span>
-        </li>
-        <li class="mb-2"><span class="h6">Created At:</span>
-          <span>{{ $identity?->created_at?->format('d M Y H:i') ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Updated By:</span> <span
-          id="text-updated-by">{{ $identity?->updatedBy?->name ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Updated At:</span> <span
-          id="text-updated-at">{{ $identity?->updated_at?->format('d M Y H:i') ?? '-' }}</span></li>
-        </ul>
-        <hr class="my-4 border-gray-600" />
-        <div class="d-flex justify-content-center">
-        <a href="javascript:;" class="btn btn-primary me-4 btn-edit-identity" data-bs-target="#editIdentity"
-          data-id="{{ $identity?->id }}" data-hostname="{{ $identity?->hostname }}"
-          data-ip_addr_srv="{{ $identity?->ip_addr_srv }}" data-platform_id="{{ $identity?->platform_id }}"
-          data-username="{{ $identity?->username }}" data-functionality="{{ $identity?->functionality }}"
-          data-description="{{ $identity?->description }}" data-bs-toggle="modal">Edit</a>
-        <a href="javascript:;" class="btn btn-danger delete-identity" data-id="{{ $identity?->id }}">Hapus</a>
-        </div>
-      </div>
-      </div>
-    </div>
-    </div>
+  <div class="card mb-4">
+    <div class="card-body">
+    <h5 class="pb-4 border-bottom mb-4">Detail Permintaan Vault</h5>
 
-    <!-- Vault Request Details -->
-    <div class="col-xl-6 col-lg-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-      <h5 class="pb-4 border-bottom mb-4">Detail Permintaan Vault</h5>
-      <ul class="list-unstyled">
-        <li class="mb-2"><span class="h6">Request ID:</span> <span>{{ $vault->request_id }}</span></li>
-        <li class="mb-2"><span class="h6">Purpose:</span> <span id="text-purpose">{{ $vault->purpose }}</span></li>
-        <li class="mb-2"><span class="h6">Durations:</span> <span id="text-duration">{{ $vault->duration_minutes }}
-          menit</span></li>
-        <li class="mb-2"><span class="h6">Status:</span>
+    <div class="row">
+      <!-- Kolom Kiri -->
+      <div class="col-md-6 border-end">
+      <ul class="list-unstyled mb-0">
+        <li class="mb-3"><span class="fw-semibold">Request ID:</span> {{ $vault->request_id }}</li>
+        <li class="mb-3"><span class="fw-semibold">Purpose:</span> <span
+          id="text-purpose">{{ $vault->purpose }}</span></li>
+        <li class="mb-3">
+        <span class="fw-semibold">Usage Time:</span><br>
+        @if ($vault->start_at && $vault->end_at)
+      <span>{{ $vault->start_at->format('d M Y H:i') }} s/d {{ $vault->end_at->format('d M Y H:i') }}</span>
+      @else
+      <span class="text-muted">-</span>
+      @endif
+        </li>
+        <li class="mb-3">
+        <span class="fw-semibold">Duration:</span>
+        <span id="text-duration">{{ $vault->duration_friendly ?? '-' }}</span>
+        </li>
+        <li class="mb-3">
+        <span class="fw-semibold">Status:</span>
         <span
           class="badge bg-label-{{ $vault->status === 'approved' ? 'success' : ($vault->status === 'rejected' ? 'danger' : 'warning') }}">
           {{ strtoupper($vault->status) }}
         </span>
         </li>
-        <li class="mb-2"><span class="h6">Created by:</span> <span>{{ $vault->user->name ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Created at:</span>
-        <span>{{ $vault->created_at->format('d M Y H:i') }}</span></li>
-        <li class="mb-2"><span class="h6">Approved by:</span> <span>{{ $vault->approvedBy->name ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Approved at:</span>
-        <span>{{ $vault->approved_at ? \Carbon\Carbon::parse($vault->approved_at)->format('d M Y H:i') : '-' }}</span>
+        <li class="mb-3"><span class="fw-semibold">Requestor:</span> {{ $vault->user->name ?? '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Created at:</span> {{ $vault->created_at->format('d M Y H:i') }}
         </li>
-        <li class="mb-2"><span class="h6">Revealed by:</span> <span>{{ $vault->revealedBy->name ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Revealed at:</span>
-        <span>{{ $vault->revealed_at?->format('d M Y H:i') ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Revealer IP:</span> <span>{{ $vault->reveal_ip ?? '-' }}</span></li>
-        <li class="mb-2"><span class="h6">Canceled at:</span>
-        <span>{{ $vault->revoked_at?->format('d M Y H:i') ?? '-' }}</span></li>
+        <li class="mb-3"><span class="fw-semibold">Updated at:</span>
+        {{ $vault->updated_at ? $vault->updated_at->format('d M Y H:i') : '-' }}
+        </li>
       </ul>
-      <hr class="my-4 border-gray-600" />
-      <div class="d-flex justify-content-center mt-3">
-        <a href="javascript:;" class="btn btn-primary me-2 btn-edit-request" data-id="{{ $vault->id }}"
-        data-request_id="{{ $vault->request_id }}" data-purpose="{{ $vault->purpose }}"
-        data-duration="{{ $vault->duration_minutes }}" data-status="{{ $vault->status }}"
-        data-approved_by="{{ $vault->approved_by }}" data-revealed_by="{{ $vault->revealed_by }}"
-        data-reveal_ip="{{ $vault->reveal_ip }}" data-approved_at="{{ $vault->approved_at }}"
-        data-revealed_at="{{ $vault->revealed_at }}" data-revoked_at="{{ $vault->revoked_at }}"
-        data-bs-toggle="modal" data-bs-target="#editRequestModal">Edit</a>
-        <a href="javascript:;" class="btn btn-danger btn-delete-request" data-id="{{ $vault->id }}">Hapus</a>
       </div>
+
+      <!-- Kolom Kanan -->
+      <div class="col-md-6">
+      <ul class="list-unstyled mb-0">
+        <li class="mb-3"><span class="fw-semibold">Approved by:</span> {{ $vault->approvedBy->name ?? '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Approved at:</span>
+        {{ $vault->approved_at ? $vault->approved_at->format('d M Y H:i') : '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Revealer:</span> {{ $vault->revealedBy->name ?? '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Revealed at:</span>
+        {{ $vault->revealed_at?->format('d M Y H:i') ?? '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Revealer IP:</span> {{ $vault->reveal_ip ?? '-' }}</li>
+        <li class="mb-3"><span class="fw-semibold">Revoked at:</span>
+        {{ $vault->revoked_at?->format('d M Y H:i') ?? '-' }}</li>
+
+        <li class="mb-3"><span class="fw-semibold">Requested Identity:</span>
+        <ul class="list-group list-group-flush mt-2">
+          @forelse ($vault->identities as $identity)
+        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+        <div>
+        <strong>{{ $identity->hostname }}</strong><br>
+        <small>{{ $identity->username . '@' . ($identity->ip_addr_srv ?? 'no-ip') }}</small>
+        </div>
+        <span class="badge bg-primary">{{ $identity->platform->name ?? 'N/A' }}</span>
+        </li>
+      @empty
+        <li class="list-group-item text-muted">There are no identity requested.</li>
+      @endforelse
+        </ul>
+        </li>
+      </ul>
       </div>
+    </div>
+
+    <hr class="my-4 border-gray-600" />
+
+    <div class="d-flex justify-content-center mt-3">
+      <a href="javascript:;" class="btn btn-primary me-2 btn-edit-request" data-id="{{ $vault->id }}">Edit</a>
+      <a href="javascript:;" class="btn btn-danger btn-delete-request" data-id="{{ $vault->id }}">Hapus</a>
     </div>
     </div>
   </div>
-  @include('_partials/_modals/modal-edit-identity', ['platforms' => \App\Models\Platform::all()])
+
   @include('_partials/_modals/modal-edit-vault', ['platforms' => \App\Models\Platform::all()])
+
   <script>
     window.platformList = @json($platforms->pluck('name', 'id'));
   </script>

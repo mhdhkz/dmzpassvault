@@ -24,9 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $.ajax({
           url: `/vault/${id}`,
           type: 'DELETE',
-          data: {
-            _token: csrfToken
-          },
+          data: { _token: csrfToken },
           success: function (res) {
             Swal.fire({
               icon: 'success',
@@ -35,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
               timer: 1500,
               showConfirmButton: false
             });
-
             setTimeout(() => {
               window.location.href = '/vault/vault-list';
             }, 1600);
@@ -52,57 +49,19 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // 🔵 DELETE IDENTITY (HANYA JIKA TOMBOL TERSEDIA)
-  const deleteIdentityBtn = document.querySelector('.delete-identity');
-  if (deleteIdentityBtn) {
-    deleteIdentityBtn.addEventListener('click', function () {
-      const id = this.getAttribute('data-id');
+  // 🟢 EDIT VAULT (AJAX load latest data)
+  $(document).on('click', '.btn-edit-request', function () {
+    const id = $(this).data('id');
 
-      Swal.fire({
-        title: 'Apakah kamu yakin?',
-        text: 'Data yang dihapus tidak dapat dikembalikan!',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, hapus!',
-        cancelButtonText: 'Batal',
-        customClass: {
-          confirmButton: 'btn btn-danger me-2',
-          cancelButton: 'btn btn-label-secondary'
-        },
-        buttonsStyling: false
-      }).then(result => {
-        if (result.isConfirmed) {
-          fetch(`/identity/delete/${id}`, {
-            method: 'DELETE',
-            headers: {
-              'X-CSRF-TOKEN': csrfToken,
-              Accept: 'application/json'
-            }
-          })
-            .then(res => {
-              if (!res.ok) throw new Error('Gagal menghapus');
-              return res.json();
-            })
-            .then(data => {
-              if (data.success) {
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Berhasil!',
-                  text: 'Data telah dihapus.',
-                  showConfirmButton: false,
-                  timer: 1500
-                }).then(() => {
-                  window.location.href = '/identity/identity-list';
-                });
-              } else {
-                throw new Error(data.message || 'Gagal menghapus');
-              }
-            })
-            .catch(err => {
-              Swal.fire('Error', err.message, 'error');
-            });
-        }
-      });
+    $.get(`/vault/${id}/json`, function (data) {
+      const startTime = moment(data.start_at).format('YYYY-MM-DD HH:mm');
+      const endTime = moment(data.end_at).format('YYYY-MM-DD HH:mm');
+
+      $('#editRequestId').val(data.id);
+      $('#editPurpose').val(data.purpose);
+      $('#editDurationRange').val(`${startTime} - ${endTime}`).data('start', startTime).data('end', endTime);
+
+      $('#editRequestModal').modal('show');
     });
-  }
+  });
 });

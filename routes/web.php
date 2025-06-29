@@ -49,9 +49,11 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::post('/vault/vault-form', [PasswordRequestController::class, 'store'])->name('vault.store');
   Route::post('/vault/approve/multiple', [PasswordRequestController::class, 'approveMultiple']);
   Route::post('/vault/reject/multiple', [PasswordRequestController::class, 'rejectMultiple']);
+  Route::get('/vault/next-request-id', [PasswordRequestController::class, 'getNextRequestId'])->name('vault.next-id');
   Route::get('/vault/{id}', [PasswordRequestController::class, 'show'])->name('vault.show');
   Route::put('/vault/{id}', [PasswordRequestController::class, 'update'])->name('vault.update');
   Route::delete('/vault/{id}', [PasswordRequestController::class, 'destroy'])->name('vault.destroy');
   Route::post('/vault/{id}/approve', [PasswordRequestController::class, 'approve'])->name('vault.approve');
   Route::post('/vault/{id}/reject', [PasswordRequestController::class, 'reject'])->name('vault.reject');
+  Route::get('/vault/{id}/json', [PasswordRequestController::class, 'getJson']);
 });

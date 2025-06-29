@@ -1,70 +1,64 @@
-/**
- * Edit Vault Modal
- */
 'use strict';
 
 $(function () {
+  // Inisialisasi Select2
   const select2 = $('.select2');
   if (select2.length) {
     select2.each(function () {
-      var $this = $(this);
-      $this.wrap('<div class="position-relative"></div>').select2({
-        placeholder: 'Pilih nilai',
-        dropdownParent: $this.parent()
-      });
+      $(this)
+        .wrap('<div class="position-relative"></div>')
+        .select2({
+          placeholder: 'Pilih nilai',
+          dropdownParent: $(this).parent()
+        });
     });
   }
 
-  let startDate, endDate;
-
-  // 🟡 FILL: Modal Edit Vault
+  // 🔁 Fetch data saat tombol edit diklik
   $(document).on('click', '.btn-edit-request', function () {
-    const data = $(this).data();
+    const id = $(this).data('id');
 
-    $('#editRequestId').val(data.id);
-    $('#editRequestIdentifier').val(data.request_id);
-    $('#editPurpose').val(data.purpose);
+    $.get(`/vault/${id}/json`, function (data) {
+      const start = moment(data.start_at).format('YYYY-MM-DD HH:mm');
+      const end = moment(data.end_at).format('YYYY-MM-DD HH:mm');
 
-    if (data.start_time && data.end_time) {
-      $('#editDurationRange')
-        .val(`${data.start_time} - ${data.end_time}`)
-        .data('start', data.start_time)
-        .data('end', data.end_time);
-    }
+      $('#editRequestId').val(data.id);
+      $('#editRequestIdentifier').val(data.request_id);
+      $('#editPurpose').val(data.purpose);
+      $('#editDurationRange').val(`${start} - ${end}`).data('start', start).data('end', end);
 
-    $('#editRequestModal').modal('show');
+      $('#editRequestModal').modal('show');
+    });
   });
 
-  // 🟡 INISIALISASI: DateRangePicker saat modal ditampilkan
+  // Daterangepicker
   $('#editDurationRange').daterangepicker({
     timePicker: true,
     timePicker24Hour: true,
     autoUpdateInput: false,
     locale: {
       format: 'YYYY-MM-DD HH:mm',
-      cancelLabel: 'Batal',
-      applyLabel: 'Pilih'
+      applyLabel: 'Pilih',
+      cancelLabel: 'Batal'
     },
     maxSpan: { days: 5 },
-    parentEl: '#editRequestModal', // biar tetap di dalam modal
-    appendTo: '#editRequestModal' // arahkan rendering DOM ke modal
+    parentEl: '#editRequestModal',
+    appendTo: '#editRequestModal'
   });
 
   $('#editDurationRange').on('apply.daterangepicker', function (ev, picker) {
-    const value = `${picker.startDate.format('YYYY-MM-DD HH:mm')} - ${picker.endDate.format('YYYY-MM-DD HH:mm')}`;
-    $(this)
-      .val(value) // ⬅️ inilah yang bikin input terisi
-      .data('start', picker.startDate.format('YYYY-MM-DD HH:mm'))
-      .data('end', picker.endDate.format('YYYY-MM-DD HH:mm'));
+    const start = picker.startDate.format('YYYY-MM-DD HH:mm');
+    const end = picker.endDate.format('YYYY-MM-DD HH:mm');
+    $(this).val(`${start} - ${end}`).data('start', start).data('end', end);
   });
 
-  // 🟡 RESET saat modal ditutup
+  // Reset modal
   $('#editRequestModal').on('hidden.bs.modal', function () {
     $('#editRequestForm')[0].reset();
     $('#editDurationRange').val('').removeData('start').removeData('end');
   });
 
-  // 🟡 SUBMIT: Vault Update
+  // Submit update
   $('#editRequestForm').on('submit', function (e) {
     e.preventDefault();
 
@@ -74,7 +68,7 @@ $(function () {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Ya, Simpan',
-      cancelButtonText: 'Batalkan'
+      cancelButtonText: 'Batal'
     }).then(result => {
       if (result.isConfirmed) {
         const $btn = $('#btnUpdateRequest');
@@ -90,7 +84,8 @@ $(function () {
           duration_minutes: moment($('#editDurationRange').data('end')).diff(
             moment($('#editDurationRange').data('start')),
             'minutes'
-          )
+          ),
+          duration_range: $('#editDurationRange').val()
         };
 
         $.ajax({
@@ -107,10 +102,11 @@ $(function () {
             });
 
             $('#text-purpose').text(formData.purpose);
-            $('#text-duration').text(formData.duration_minutes + ' menit');
+            $('#text-duration').text(formData.duration_minutes + ' mins');
 
             $('#editRequestModal').modal('hide');
             $('#editRequestForm')[0].reset();
+            $('.datatables-users').DataTable().ajax.reload(null, false);
           },
           error: function (err) {
             Swal.fire({

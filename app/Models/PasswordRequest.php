@@ -100,11 +100,13 @@ class PasswordAuditLog extends Model
 class PasswordRequest extends Model
 {
   use HasFactory;
+
   protected $fillable = [
     'request_id',
     'user_id',
     'purpose',
-    'duration_minutes',
+    'start_at',
+    'end_at',
     'status',
     'approved_by',
     'approved_at',
@@ -112,6 +114,14 @@ class PasswordRequest extends Model
     'revealed_by',
     'reveal_ip',
     'revoked_at'
+  ];
+
+  protected $casts = [
+    'start_at' => 'datetime',
+    'end_at' => 'datetime',
+    'approved_at' => 'datetime',
+    'revealed_at' => 'datetime',
+    'revoked_at' => 'datetime',
   ];
 
   public function user()
