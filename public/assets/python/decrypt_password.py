@@ -1,10 +1,10 @@
 import argparse
 import base64
 import pymysql
-import shlex
+import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from vault_config import DB_CONFIG, AES_KEY, LINUX_ROOT_PASSWORD, DB_ROOT_PASSWORD
+from vault_config import DB_CONFIG, AES_KEY
 
 
 # ===== FUNGSI DEKRIPSI =====
@@ -24,17 +24,26 @@ def get_encrypted_password(identity_id):
             cur.execute("SELECT encrypted_password FROM password_vaults WHERE identity_id = %s", (identity_id,))
             row = cur.fetchone()
             if not row:
-                raise Exception("❌ Data tidak ditemukan.")
+                raise Exception("Data tidak ditemukan.")
             return row[0]
     finally:
         conn.close()
 
 # ===== MAIN LOGIC =====
 def main(identity_id):
-    print(f"🔍 Mengambil password terenkripsi untuk identity {identity_id}")
-    encrypted = get_encrypted_password(identity_id)
-    decrypted = decrypt_aes192(encrypted, AES_KEY)
-    print(f"🔓 Password terdekripsi: {decrypted}")
+    try:
+        encrypted = get_encrypted_password(identity_id)
+        decrypted = decrypt_aes192(encrypted, AES_KEY)
+        print(json.dumps({
+            "status": "ok",
+            "decrypted": decrypted,
+            "message": "Password berhasil didekripsi"
+        }))
+    except Exception as e:
+        print(json.dumps({
+            "status": "error",
+            "message": str(e)
+        }))
 
 # ===== CLI ENTRY =====
 if __name__ == "__main__":

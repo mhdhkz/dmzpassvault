@@ -10,7 +10,8 @@ use App\Models\PasswordRequest;
 use App\Models\Identity;
 use App\Models\PasswordVault;
 use Yajra\DataTables\Facades\DataTables;
-
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 
 
@@ -313,9 +314,38 @@ class PasswordRequestController extends Controller
       foreach ($request->identity_ids as $identityId) {
         $identity = Identity::findOrFail($identityId);
 
-        // 🔐 Dummy generate password (ganti nanti dengan call Python)
-        $plainPassword = \Str::random(14);
-        $encrypted = base64_encode("ENCRYPTED::" . $plainPassword);
+        // 🔐 Jalankan skrip Python
+        $scriptPath = public_path('assets/python/encrypt_password.py');
+
+        // Ambil environment bawaan sistem dan tambahkan yang penting
+        $env = array_merge($_ENV, [
+          'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+          'PATH' => getenv('PATH'),
+          'USERNAME' => getenv('USERNAME') ?: 'webuser', // Optional
+        ]);
+
+        $process = new Process([
+          env('PYTHON_PATH', 'python'), // default ke 'python3' kalau .env kosong
+          $scriptPath,
+          '--identity=' . $identityId
+        ], base_path(), $env); // ⬅️ Ini yang penting: base_path & env
+
+        $process->run();
+
+
+        if (!$process->isSuccessful()) {
+          throw new ProcessFailedException($process);
+        }
+
+        //logger('Raw output from Python:', [$process->getOutput()]);
+        $output = json_decode($process->getOutput(), true);
+
+        // Jika output valid dan ada password
+        if (!isset($output['encrypted'])) {
+          throw new \Exception('Output dari Python tidak valid.');
+        }
+
+        $encrypted = $output['encrypted'];
 
         // Cek apakah vault sudah ada
         $vault = PasswordVault::where('identity_id', $identityId)->first();
@@ -329,8 +359,6 @@ class PasswordRequestController extends Controller
           $lastNumber = $lastId ? intval(substr($lastId, 1)) : 0;
           $newId = 'p' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-          \Log::info('Generate ID: ' . $newId);
-
           $vault = new PasswordVault([
             'id' => $newId,
             'identity_id' => $identityId,
@@ -338,16 +366,12 @@ class PasswordRequestController extends Controller
           ]);
         }
 
-        $vault->encrypted_password = $encrypted;
-        $vault->last_changed_by = auth()->id();
-        $vault->last_changed_at = now();
-        $vault->save();
-
         $results[] = [
           'identity_id' => $identityId,
-          'status' => 'success',
-          'message' => "Password berhasil dienkripsi untuk {$identity->hostname}"
+          'status' => $output['status'],
+          'message' => $output['message']
         ];
+
       }
 
       DB::commit();
@@ -359,7 +383,6 @@ class PasswordRequestController extends Controller
       ]);
     } catch (\Throwable $e) {
       DB::rollBack();
-      \Log::error('Generate Password Error', ['exception' => $e]);
 
       return response()->json([
         'status' => 'error',
@@ -403,17 +426,13 @@ class PasswordRequestController extends Controller
     return is_string($encrypted) ? $encrypted : (is_resource($encrypted) ? stream_get_contents($encrypted) : (string) $encrypted);
   }
 
-
   public function decryptPassword($identityId)
   {
     $user = auth()->user();
 
-    // Ambil request valid
     $request = PasswordRequest::where('user_id', $user->id)
       ->where('status', 'approved')
-      ->whereHas('identities', function ($q) use ($identityId) {
-        $q->where('identities.id', $identityId);
-      })
+      ->whereHas('identities', fn($q) => $q->where('identities.id', $identityId))
       ->where('start_at', '<=', now())
       ->where('end_at', '>=', now())
       ->latest()
@@ -426,9 +445,7 @@ class PasswordRequestController extends Controller
       ], 403);
     }
 
-    // Ambil data vault berdasarkan identity dan request
-    $vault = PasswordVault::select('*')->where('identity_id', $identityId)->first();
-
+    $vault = PasswordVault::with('identity')->where('identity_id', $identityId)->first();
 
     if (!$vault) {
       return response()->json([
@@ -437,22 +454,57 @@ class PasswordRequestController extends Controller
       ], 404);
     }
 
-    // 🔐 Lakukan dekripsi (sementara dummy)
-    $decrypted = $this->decryptAES($vault->encrypted_password);
+    try {
+      $scriptPath = public_path('assets/python/decrypt_password.py');
 
-    $request->update([
-      'revealed_by' => auth()->id(),
-      'revealed_at' => now(),
-      'reveal_ip' => request()->ip(), // opsional, jika kamu pakai kolom ini juga
-    ]);
+      $env = array_merge($_ENV, [
+        'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+        'PATH' => getenv('PATH'),
+        'USERNAME' => getenv('USERNAME') ?: 'webuser',
+      ]);
 
+      $process = new Process([
+        env('PYTHON_PATH', 'python'),
+        $scriptPath,
+        '--identity=' . $identityId
+      ], base_path(), $env);
 
-    return response()->json([
-      'status' => 'ok',
-      'hostname' => $vault->identity->hostname ?? null,
-      'decrypted_password' => $this->decryptAES($vault->encrypted_password)
-    ]);
+      $process->run();
 
+      if (!$process->isSuccessful()) {
+        throw new ProcessFailedException($process);
+      }
+
+      $output = json_decode($process->getOutput(), true);
+
+      if (!isset($output['decrypted'])) {
+        return response()->json([
+          'status' => 'error',
+          'message' => 'Gagal mendekripsi password.'
+        ], 500);
+      }
+
+      $decrypted = $output['decrypted'];
+
+      $request->update([
+        'revealed_by' => auth()->id(),
+        'revealed_at' => now(),
+        'reveal_ip' => request()->ip(),
+      ]);
+
+      return response()->json([
+        'status' => 'ok',
+        'hostname' => $vault->identity->hostname ?? null,
+        'decrypted_password' => $decrypted
+      ]);
+
+    } catch (\Throwable $e) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Gagal menjalankan proses dekripsi.',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
 }

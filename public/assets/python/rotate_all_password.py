@@ -21,7 +21,7 @@ def get_all_identity_ids():
         conn.close()
 
 def rotate_identity(identity_id):
-    print(f"\n🔁 Rotasi password untuk: {identity_id}")
+    print(f"Rotasi password untuk: {identity_id}")
     try:
         info = get_identity_info(identity_id)
         ip = info['ip']
@@ -29,27 +29,27 @@ def rotate_identity(identity_id):
         platform = info['platform']
 
         password = generate_password()
-        print(f"🔐 Password baru: {password}")
+        print(f"Password baru: {password}")
 
         if platform == 'linux':
             success = change_linux_password(ip, username, password)
         elif platform == 'database':
             success = change_db_password(ip, username, password)
         else:
-            print(f"❌ Platform tidak dikenali: {platform}")
+            print(f"Platform tidak dikenali: {platform}")
             return
 
         if success:
             encrypted = encrypt_aes192(password, AES_KEY)
             save_to_vault(identity_id, encrypted)
         else:
-            print(f"❌ Gagal mengubah password untuk {identity_id}")
+            print(f"Gagal mengubah password untuk {identity_id}")
     except Exception as e:
-        print(f"❌ Error pada {identity_id}: {e}")
+        print(f"Error pada {identity_id}: {e}")
 
 def main():
     identity_ids = get_all_identity_ids()
-    print(f"🔎 Total identity ditemukan: {len(identity_ids)}")
+    print(f"Total identity ditemukan: {len(identity_ids)}")
     for identity_id in identity_ids:
         rotate_identity(identity_id)
 

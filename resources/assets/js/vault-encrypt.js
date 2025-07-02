@@ -371,49 +371,71 @@ document.addEventListener('DOMContentLoaded', function (e) {
       }
     });
 
-    document.addEventListener('click', function (e) {
-      const btn = e.target.closest('.btn-generate-password');
-      if (btn) {
-        const identityId = btn.getAttribute('data-id');
-        Swal.fire({
-          title: 'Generate Password',
-          text: 'Yakin ingin mengenkripsi ulang password untuk server ini?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Ya, Lanjutkan'
-        }).then(result => {
-          if (result.isConfirmed) {
-            Swal.fire({
-              title: 'Memproses...',
-              allowOutsideClick: false,
-              didOpen: () => Swal.showLoading()
-            });
+    $(document).on('click', '.btn-generate-password', function () {
+      const identityId = $(this).data('id');
+      const csrf = $('meta[name="csrf-token"]').attr('content');
 
-            fetch('/vault/generate-password', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-              },
-              body: JSON.stringify({ identity_ids: [identityId] })
-            })
-              .then(res => res.json())
-              .then(data => {
-                Swal.close();
-                if (data.status === 'ok') {
-                  showSuccessToast(data.message || 'Berhasil mengenkripsi password');
-                  $('.datatables-users').DataTable().ajax.reload(null, false);
-                } else {
-                  showErrorToast(data.message || 'Gagal mengenkripsi password');
-                }
-              })
-              .catch(err => {
-                Swal.close();
-                showErrorToast(err.message || 'Terjadi kesalahan');
+      Swal.fire({
+        title: 'Generate Password Baru?',
+        text: 'Password lama akan diganti secara otomatis di server target.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Generate',
+        cancelButtonText: 'Batal',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-label-secondary'
+        },
+        buttonsStyling: false
+      }).then(result => {
+        if (result.isConfirmed) {
+          // ✅ Tampilkan loading sebelum AJAX
+          Swal.fire({
+            title: 'Sedang memproses...',
+            text: 'Password sedang digenerate dan dienkripsi.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          $.ajax({
+            url: '/vault/generate-password',
+            method: 'POST',
+            data: {
+              _token: csrf,
+              identity_ids: [identityId]
+            },
+            success: function (res) {
+              Swal.close();
+              if (res.status === 'ok') {
+                const detail = res.results?.[0]?.message || res.message;
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Berhasil',
+                  text: detail
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Gagal',
+                  text: res.message || 'Terjadi kesalahan.'
+                });
+              }
+            },
+            error: function (xhr) {
+              Swal.close();
+              Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan saat memproses generate password.'
               });
-          }
-        });
-      }
+              console.error(xhr.responseText);
+            }
+          });
+        }
+      });
     });
 
     // To remove default btn-secondary in export buttons
