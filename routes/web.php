@@ -45,6 +45,7 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::get('/vault/vault-encrypt', [VaultEncrypt::class, 'index'])->name('vault-vault-encrypt');
   Route::post('/vault/generate-password', [PasswordRequestController::class, 'generatePassword']);
   Route::get('/vault/vault-decrypt', [VaultDecrypt::class, 'index'])->name('vault-vault-decrypt');
+  Route::post('/vault/decrypt/multiple', [PasswordRequestController::class, 'decryptMultiple']);
   Route::get('/vault/vault-list', [PasswordRequestController::class, 'index'])->name('vault-vault-list');
   Route::get('/vault/data', [PasswordRequestController::class, 'getListData'])->name('vault-vault-data');
   Route::get('/vault/vault-form', [PasswordRequestController::class, 'create'])->name('vault-vault-form');

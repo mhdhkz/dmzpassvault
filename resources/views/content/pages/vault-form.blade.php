@@ -78,7 +78,7 @@
     </div>
 
     <div class="pt-6">
-      <button type="submit" class="btn btn-primary me-4" id="confirm-color">Kirim Pengajuan</button>
+      <button type="submit" class="btn btn-primary me-4" id="confirm-color">Submit Permohonan</button>
       <button type="reset" class="btn btn-label-secondary">Batalkan</button>
     </div>
 

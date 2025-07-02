@@ -507,4 +507,68 @@ class PasswordRequestController extends Controller
     }
   }
 
+  public function decryptMultiple(Request $request)
+  {
+    $ids = $request->input('ids', []);
+
+    if (empty($ids)) {
+      return response()->json(['status' => 'error', 'message' => 'Tidak ada identity yang dipilih.']);
+    }
+
+    $results = [];
+
+    foreach ($ids as $id) {
+      try {
+        $identity = Identity::findOrFail($id);
+
+        // Jalankan Python script decrypt
+        $scriptPath = public_path('assets/python/decrypt_password.py');
+
+        $env = array_merge($_ENV, [
+          'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+          'PATH' => getenv('PATH'),
+          'USERNAME' => getenv('USERNAME') ?: 'webuser'
+        ]);
+
+        $process = new Process([
+          env('PYTHON_PATH', 'python'),
+          $scriptPath,
+          '--identity=' . $identity->id
+        ], base_path(), $env); // <- disamakan dengan encrypt
+
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+          throw new \Exception($process->getErrorOutput());
+        }
+
+        //logger('Raw output from Python:', [$process->getOutput()]);
+        $output = trim($process->getOutput());
+        $data = json_decode($output, true);
+
+        if (!isset($data['decrypted'])) {
+          throw new \Exception('Akses vault belum disetujui atau sudah expired.');
+        }
+
+        $password = $data['decrypted'];
+
+        $results[] = [
+          'identity_id' => $identity->id,
+          'hostname' => $identity->hostname,
+          'password' => $password
+        ];
+      } catch (\Throwable $e) {
+        $results[] = [
+          'identity_id' => $id,
+          'hostname' => '(Gagal)',
+          'password' => '[Error: ' . $e->getMessage() . ']'
+        ];
+      }
+    }
+
+    return response()->json([
+      'status' => 'ok',
+      'data' => $results
+    ]);
+  }
 }
