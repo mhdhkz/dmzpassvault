@@ -43,6 +43,7 @@ class PlatformAndIdentitySeeder extends Seeder
 
     // 3. Seed password_requests dan request_identity
     $identityIds = array_column($identities, 'id');
+    $statusOptions = ['pending', 'approved', 'rejected', 'expired']; // <--- aman diatur di sini
 
     for ($i = 1; $i <= 10; $i++) {
       $prefix = 'REQ' . now()->format('ymd');
@@ -57,7 +58,7 @@ class PlatformAndIdentitySeeder extends Seeder
         'purpose' => 'Akses untuk maintenance server ke-' . $i,
         'start_at' => $startAt,
         'end_at' => $endAt,
-        'status' => ['pending', 'approved', 'rejected'][rand(0, 3)],
+        'status' => $statusOptions[array_rand($statusOptions)],
         'created_at' => Carbon::now()->subDays(10 - $i),
         'updated_at' => now()
       ]);
@@ -71,5 +72,6 @@ class PlatformAndIdentitySeeder extends Seeder
         ]);
       }
     }
+
   }
 }

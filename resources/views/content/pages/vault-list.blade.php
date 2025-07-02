@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'List Pengajuan Vault')
+@section('title', 'List Permohonan Vault')
 
 @section('vendor-style')
   @vite([
@@ -37,8 +37,39 @@
   <!-- Vault Request List Table -->
   <div class="card">
     <div class="card-header border-bottom custom-header-bg">
-    <h3 class="card-title mb-0 text-center text-white">List Pengajuan Vault</h3>
+    <h3 class="card-title mb-0 text-center text-white">List Permohonan Vault</h3>
     </div>
+    <!-- DataTable -->
+    <!-- FILTER -->
+    <div class="px-3 pt-3">
+    <div class="row mb-3">
+      <div class="col-md-3">
+      <label for="filter-status" class="form-label">Status</label>
+      <select id="filter-status" class="form-select">
+        <option value="">Semua</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="expired">Expired</option>
+      </select>
+      </div>
+      <div class="col-md-3">
+      <label for="filter-user" class="form-label">User Pemohon</label>
+      <input type="text" id="filter-user" class="form-control" placeholder="Nama user">
+      </div>
+      <div class="col-md-4">
+      <label for="filter-date-range" class="form-label">Tanggal Request</label>
+      <input type="text" id="filter-date-range" class="form-control" autocomplete="off"
+        placeholder="YYYY-MM-DD - YYYY-MM-DD">
+      </div>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button id="btn-clear-filter" class="btn btn-warning w-70 ml-2">
+      <i class="bx bx-eraser me-1"></i> Clear Filter
+      </button>
+    </div>
+    </div>
+    <!-- ENDFILTER -->
     <!-- DataTable -->
     <div class="card-datatable">
     <table class="datatables-users table border-top">

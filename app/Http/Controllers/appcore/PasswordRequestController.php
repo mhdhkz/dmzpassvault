@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use App\Models\PasswordRequest;
 use App\Models\Identity;
-use App\Models\RequestIdentity;
+use App\Models\PasswordVault;
 use Yajra\DataTables\Facades\DataTables;
+
+
+
 
 class PasswordRequestController extends Controller
 {
@@ -21,7 +23,26 @@ class PasswordRequestController extends Controller
 
   public function getListData(Request $request)
   {
-    $query = PasswordRequest::with(['user', 'identities'])->latest();
+    $query = PasswordRequest::with(['user:id,name', 'identities:id'])->select(['id', 'request_id', 'user_id', 'start_at', 'end_at', 'created_at', 'status'])->latest();
+
+
+    if ($request->filled('status')) {
+      $query->where('status', $request->status);
+    }
+
+    if ($request->filled('user_name')) {
+      $query->whereHas('user', function ($q) use ($request) {
+        $q->where('name', 'like', '%' . $request->user_name . '%');
+      });
+    }
+
+    if ($request->filled('date_range')) {
+      [$start, $end] = explode(' - ', $request->date_range);
+      $query->whereBetween('created_at', [
+        \Carbon\Carbon::parse($start)->startOfDay(),
+        \Carbon\Carbon::parse($end)->endOfDay()
+      ]);
+    }
 
     return DataTables::of($query)
       ->addIndexColumn()
@@ -125,7 +146,6 @@ class PasswordRequestController extends Controller
     }
   }
 
-
   public function show($id)
   {
     $request = PasswordRequest::with(['user', 'identities.platform', 'approvedBy', 'revealedBy'])->findOrFail($id);
@@ -157,8 +177,6 @@ class PasswordRequestController extends Controller
     ]);
   }
 
-
-
   public function approve($id)
   {
     $request = PasswordRequest::findOrFail($id);
@@ -176,12 +194,13 @@ class PasswordRequestController extends Controller
     $request = PasswordRequest::findOrFail($id);
     $request->update([
       'status' => 'rejected',
-      'approved_at' => now(),
-      'approved_by' => Auth::id()
+      'approved_at' => null,
+      'approved_by' => null
     ]);
 
     return response()->json(['success' => true]);
   }
+
 
   public function approveMultiple(Request $request)
   {
@@ -197,11 +216,12 @@ class PasswordRequestController extends Controller
   {
     PasswordRequest::whereIn('id', $request->ids)->update([
       'status' => 'rejected',
-      'approved_at' => now(),
-      'approved_by' => Auth::id()
+      'approved_at' => null,
+      'approved_by' => null
     ]);
     return response()->json(['success' => true]);
   }
+
 
   public function update(Request $request, $id)
   {
@@ -277,6 +297,162 @@ class PasswordRequestController extends Controller
       'end_at' => $request->end_at->format('Y-m-d H:i'),
       'status' => $request->status
     ]);
+  }
+
+  public function generatePassword(Request $request)
+  {
+    $request->validate([
+      'identity_ids' => ['required', 'array'],
+      'identity_ids.*' => ['exists:identities,id']
+    ]);
+
+    DB::beginTransaction();
+    $results = [];
+
+    try {
+      foreach ($request->identity_ids as $identityId) {
+        $identity = Identity::findOrFail($identityId);
+
+        // 🔐 Dummy generate password (ganti nanti dengan call Python)
+        $plainPassword = \Str::random(14);
+        $encrypted = base64_encode("ENCRYPTED::" . $plainPassword);
+
+        // Cek apakah vault sudah ada
+        $vault = PasswordVault::where('identity_id', $identityId)->first();
+
+        if (!$vault) {
+          $lastId = PasswordVault::where('id', 'like', 'p%')
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->value('id');
+
+          $lastNumber = $lastId ? intval(substr($lastId, 1)) : 0;
+          $newId = 'p' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+          \Log::info('Generate ID: ' . $newId);
+
+          $vault = new PasswordVault([
+            'id' => $newId,
+            'identity_id' => $identityId,
+            'created_at' => now()
+          ]);
+        }
+
+        $vault->encrypted_password = $encrypted;
+        $vault->last_changed_by = auth()->id();
+        $vault->last_changed_at = now();
+        $vault->save();
+
+        $results[] = [
+          'identity_id' => $identityId,
+          'status' => 'success',
+          'message' => "Password berhasil dienkripsi untuk {$identity->hostname}"
+        ];
+      }
+
+      DB::commit();
+
+      return response()->json([
+        'status' => 'ok',
+        'results' => $results,
+        'message' => 'Proses generate selesai.'
+      ]);
+    } catch (\Throwable $e) {
+      DB::rollBack();
+      \Log::error('Generate Password Error', ['exception' => $e]);
+
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Terjadi kesalahan saat menyimpan data.',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+
+  }
+
+  public function checkAccess($identityId)
+  {
+    $userId = auth()->id();
+
+    // Cari request aktif & disetujui dari user untuk identity ini
+    $request = PasswordRequest::where('user_id', $userId)
+      ->where('status', 'approved')
+      ->whereHas('identities', function ($q) use ($identityId) {
+        $q->where('identities.id', $identityId);
+      })
+      ->where('start_at', '<=', now())
+      ->where('end_at', '>=', now())
+      ->latest()
+      ->first();
+
+    if (!$request) {
+      return response()->json([
+        'status' => 'denied',
+        'message' => 'Request belum disetujui atau sudah kedaluwarsa.'
+      ], 403);
+    }
+
+    return response()->json([
+      'status' => 'ok',
+      'message' => 'Request valid, lanjutkan dekripsi.'
+    ]);
+  }
+
+  private function decryptAES($encrypted)
+  {
+    return is_string($encrypted) ? $encrypted : (is_resource($encrypted) ? stream_get_contents($encrypted) : (string) $encrypted);
+  }
+
+
+  public function decryptPassword($identityId)
+  {
+    $user = auth()->user();
+
+    // Ambil request valid
+    $request = PasswordRequest::where('user_id', $user->id)
+      ->where('status', 'approved')
+      ->whereHas('identities', function ($q) use ($identityId) {
+        $q->where('identities.id', $identityId);
+      })
+      ->where('start_at', '<=', now())
+      ->where('end_at', '>=', now())
+      ->latest()
+      ->first();
+
+    if (!$request) {
+      return response()->json([
+        'status' => 'denied',
+        'message' => 'Akses tidak valid atau sudah kedaluwarsa.'
+      ], 403);
+    }
+
+    // Ambil data vault berdasarkan identity dan request
+    $vault = PasswordVault::select('*')->where('identity_id', $identityId)->first();
+
+
+    if (!$vault) {
+      return response()->json([
+        'status' => 'denied',
+        'message' => 'Data password tidak ditemukan.'
+      ], 404);
+    }
+
+    // 🔐 Lakukan dekripsi (sementara dummy)
+    $decrypted = $this->decryptAES($vault->encrypted_password);
+
+    $request->update([
+      'revealed_by' => auth()->id(),
+      'revealed_at' => now(),
+      'reveal_ip' => request()->ip(), // opsional, jika kamu pakai kolom ini juga
+    ]);
+
+
+    return response()->json([
+      'status' => 'ok',
+      'hostname' => $vault->identity->hostname ?? null,
+      'decrypted_password' => $this->decryptAES($vault->encrypted_password)
+    ]);
+
   }
 
 }

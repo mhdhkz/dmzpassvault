@@ -5,7 +5,7 @@ use App\Http\Controllers\pages\Landing;
 use App\Http\Controllers\pages\Dashboard;
 use App\Http\Controllers\pages\Page2;
 use App\Http\Controllers\pages\IdentityList;
-use App\Http\Controllers\pages\IdentityForm;
+use App\Http\Controllers\pages\VaultEncrypt;
 use App\Http\Controllers\pages\VaultDecrypt;
 use App\Http\Controllers\authentications\RegisterController;
 use App\Http\Controllers\appcore\IdentityController;
@@ -42,6 +42,8 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   });
 
   //vault-part
+  Route::get('/vault/vault-encrypt', [VaultEncrypt::class, 'index'])->name('vault-vault-encrypt');
+  Route::post('/vault/generate-password', [PasswordRequestController::class, 'generatePassword']);
   Route::get('/vault/vault-decrypt', [VaultDecrypt::class, 'index'])->name('vault-vault-decrypt');
   Route::get('/vault/vault-list', [PasswordRequestController::class, 'index'])->name('vault-vault-list');
   Route::get('/vault/data', [PasswordRequestController::class, 'getListData'])->name('vault-vault-data');
@@ -50,6 +52,8 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::post('/vault/approve/multiple', [PasswordRequestController::class, 'approveMultiple']);
   Route::post('/vault/reject/multiple', [PasswordRequestController::class, 'rejectMultiple']);
   Route::get('/vault/next-request-id', [PasswordRequestController::class, 'getNextRequestId'])->name('vault.next-id');
+  Route::get('/vault/check-access/{identity}', [PasswordRequestController::class, 'checkAccess']);
+  Route::get('/vault/decrypt-password/{identity}', [PasswordRequestController::class, 'decryptPassword']);
   Route::get('/vault/{id}', [PasswordRequestController::class, 'show'])->name('vault.show');
   Route::put('/vault/{id}', [PasswordRequestController::class, 'update'])->name('vault.update');
   Route::delete('/vault/{id}', [PasswordRequestController::class, 'destroy'])->name('vault.destroy');

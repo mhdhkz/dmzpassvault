@@ -29,6 +29,13 @@ return new class extends Migration {
       $table->foreign('platform_id')->references('id')->on('platforms')->onDelete('cascade');
       $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
       $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
+
+      // Tambahan index
+      $table->index('hostname');
+      $table->index('ip_addr_srv');
+      $table->index('username');
+      $table->index('functionality');
+      $table->index('platform_id');
     });
 
     Schema::create('password_vaults', function (Blueprint $table) {
@@ -89,6 +96,10 @@ return new class extends Migration {
       $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
       $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
       $table->foreign('revealed_by')->references('id')->on('users')->onDelete('set null');
+
+      // Tambahan index
+      $table->index('user_id');
+      $table->index('status');
     });
 
     Schema::create('request_identity', function (Blueprint $table) {
@@ -100,10 +111,19 @@ return new class extends Migration {
       $table->foreign('password_request_id')->references('id')->on('password_requests')->onDelete('cascade');
       $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
     });
+
+    // Index tambahan untuk tabel users.name (via relasi user.name)
+    Schema::table('users', function (Blueprint $table) {
+      $table->index('name');
+    });
   }
 
   public function down(): void
   {
+    Schema::table('users', function (Blueprint $table) {
+      $table->dropIndex(['name']);
+    });
+
     Schema::dropIfExists('request_identity');
     Schema::dropIfExists('password_requests');
     Schema::dropIfExists('password_audit_logs');

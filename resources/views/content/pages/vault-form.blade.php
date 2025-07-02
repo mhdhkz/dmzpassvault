@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'Form Pengajuan Vault')
+@section('title', 'Form Permohonan Vault')
 
 @section('vendor-style')
   @vite([
@@ -27,7 +27,7 @@
 @section('content')
   <div class="card mb-6">
     <div class="card-header border-bottom custom-header-bg">
-    <h3 class="card-title mb-0 text-center text-white">Form Pengajuan Akses Password Vault</h3>
+    <h3 class="card-title mb-0 text-center text-white">Form Permohonan Akses Vault</h3>
     </div>
     <form class="card-body mt-8 mb-4 vault-form" method="POST" action="{{ route('vault.store') }}">
 

@@ -64,4 +64,44 @@ document.addEventListener('DOMContentLoaded', function () {
       $('#editRequestModal').modal('show');
     });
   });
+
+  // Approve
+  $(document).on('click', '.btn-approve-request', function () {
+    const id = $(this).data('id');
+    Swal.fire({
+      title: 'Approve Request?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Approve',
+      cancelButtonText: 'Batal'
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.post(`/vault/${id}/approve`, { _token: csrfToken }, function (res) {
+          Swal.fire('Berhasil!', 'Request telah disetujui.', 'success').then(() => {
+            location.reload();
+          });
+        });
+      }
+    });
+  });
+
+  // Reject
+  $(document).on('click', '.btn-reject-request', function () {
+    const id = $(this).data('id');
+    Swal.fire({
+      title: 'Tolak Request?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Tolak',
+      cancelButtonText: 'Batal'
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.post(`/vault/${id}/reject`, { _token: csrfToken }, function (res) {
+          Swal.fire('Ditolak!', 'Request telah ditolak.', 'success').then(() => {
+            location.reload();
+          });
+        });
+      }
+    });
+  });
 });

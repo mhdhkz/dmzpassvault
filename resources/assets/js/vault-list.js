@@ -30,7 +30,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (dtTable) {
     dtVault = new DataTable(dtTable, {
-      ajax: '/vault/data',
+      ajax: {
+        url: '/vault/data',
+        data: function (d) {
+          d.status = document.querySelector('#filter-status')?.value;
+          d.user_name = document.querySelector('#filter-user')?.value;
+          d.date_range = document.querySelector('#filter-date-range')?.value;
+        }
+      },
       processing: true,
       serverSide: true,
       order: [],
@@ -82,7 +89,30 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'user.name' },
         { data: 'created_at' },
         { data: 'duration' },
-        { data: 'status' },
+        {
+          data: 'status',
+          name: 'status',
+          render: function (data) {
+            let badgeClass = '';
+            let statusText = data.charAt(0).toUpperCase() + data.slice(1);
+
+            switch (data) {
+              case 'Approved':
+                badgeClass = 'bg-label-success';
+                break;
+              case 'Rejected':
+                badgeClass = 'bg-label-danger';
+                break;
+              case 'Pending':
+                badgeClass = 'bg-label-warning';
+                break;
+              default:
+                badgeClass = 'bg-label-info';
+            }
+
+            return `<span class="badge ${badgeClass}">${statusText}</span>`;
+          }
+        },
         { data: 'id' }
       ],
       columnDefs: [
@@ -416,6 +446,61 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     }
+
+    // Trigger reload DataTable saat filter berubah
+    document.querySelector('#filter-status')?.addEventListener('change', () => dtVault.ajax.reload());
+    function debounce(func, delay) {
+      let timer;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+      };
+    }
+
+    // Terapkan debounce ke filter nama user
+    document.querySelector('#filter-user')?.addEventListener(
+      'keyup',
+      debounce(function () {
+        dtVault.draw(); // pastikan ini objek DataTable yang kamu pakai
+      }, 500)
+    );
+
+    // Inisialisasi Daterangepicker
+    if (window.jQuery) {
+      $('#filter-date-range').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+          format: 'YYYY-MM-DD',
+          cancelLabel: 'Clear'
+        }
+      });
+
+      $('#filter-date-range').on('apply.daterangepicker', function (ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+        dtVault.ajax.reload();
+      });
+
+      $('#filter-date-range').on('cancel.daterangepicker', function () {
+        $(this).val('');
+        dtVault.ajax.reload();
+      });
+    }
+
+    // Tombol Clear Filter
+    document.querySelector('#btn-clear-filter')?.addEventListener('click', function () {
+      // Reset nilai semua filter
+      document.querySelector('#filter-status').value = '';
+      document.querySelector('#filter-user').value = '';
+      document.querySelector('#filter-date-range').value = '';
+
+      // Reset daterangepicker UI
+      $('#filter-date-range').data('daterangepicker')?.setStartDate(moment());
+      $('#filter-date-range').data('daterangepicker')?.setEndDate(moment());
+      $('#filter-date-range').val('');
+
+      // Reload datatable tanpa filter
+      dtVault.ajax.reload();
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
       // Inisialisasi Select2

@@ -1,5 +1,5 @@
 /**
- * Page Vault Decrypt
+ * Page Vault Encrypt
  */
 
 'use strict';
@@ -174,8 +174,8 @@ document.addEventListener('DOMContentLoaded', function (e) {
           render: (data, type, full, meta) => {
             return `
       <div class="d-flex align-items-center">
-        <a href="javascript:;" class="btn btn-sm btn-primary text-white d-flex align-items-center gap-1 btn-decrypt-password" data-id="${full.id}" title="Lihat Password">
-          <i class="bx bx-key"></i> <small>Lihat Password</small>
+        <a href="javascript:;" class="btn btn-sm btn-primary text-white d-flex align-items-center gap-1 btn-generate-password" data-id="${full.id}" title="Generate">
+          <i class="bx bx-key"></i> <small>Generate</small>
         </a>
       </div>
     `;
@@ -286,12 +286,12 @@ document.addEventListener('DOMContentLoaded', function (e) {
           document.querySelector(containerClass).appendChild(select);
 
           const searchWrapper = document.querySelector('.dt-search');
-          if (searchWrapper && !document.querySelector('#requestDecryptBtn')) {
+          if (searchWrapper && !document.querySelector('#requestEncryptBtn')) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'btn btn-primary ms-2';
-            btn.id = 'requestDecryptBtn';
-            btn.innerHTML = '<i class="bx bx-lock-open-alt me-1"></i> Request Dekripsi';
+            btn.id = 'requestEncryptBtn';
+            btn.innerHTML = '<i class="bx bx-lock-open-alt me-1"></i> Generate Batch';
 
             const wrapperBtn = document.createElement('div');
             wrapperBtn.className = 'd-flex align-items-center ms-2';
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
               Swal.fire({
                 icon: 'info',
                 title: 'Request Terkirim',
-                text: 'Permintaan dekripsi berhasil dikirim.',
+                text: 'Permintaan enkripsi berhasil dikirim.',
                 timer: 2000,
                 showConfirmButton: false
               });
@@ -372,96 +372,47 @@ document.addEventListener('DOMContentLoaded', function (e) {
     });
 
     document.addEventListener('click', function (e) {
-      const btn = e.target.closest('.btn-decrypt-password');
+      const btn = e.target.closest('.btn-generate-password');
       if (btn) {
+        const identityId = btn.getAttribute('data-id');
         Swal.fire({
-          title: 'Mengambil password...',
-          html: 'Mohon tunggu sebentar.',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
+          title: 'Generate Password',
+          text: 'Yakin ingin mengenkripsi ulang password untuk server ini?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Lanjutkan'
+        }).then(result => {
+          if (result.isConfirmed) {
+            Swal.fire({
+              title: 'Memproses...',
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+            });
+
+            fetch('/vault/generate-password', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+              },
+              body: JSON.stringify({ identity_ids: [identityId] })
+            })
+              .then(res => res.json())
+              .then(data => {
+                Swal.close();
+                if (data.status === 'ok') {
+                  showSuccessToast(data.message || 'Berhasil mengenkripsi password');
+                  $('.datatables-users').DataTable().ajax.reload(null, false);
+                } else {
+                  showErrorToast(data.message || 'Gagal mengenkripsi password');
+                }
+              })
+              .catch(err => {
+                Swal.close();
+                showErrorToast(err.message || 'Terjadi kesalahan');
+              });
           }
         });
-        const id = btn.getAttribute('data-id');
-        if (id) {
-          fetch(`/vault/check-access/${id}`, {
-            method: 'GET',
-            headers: {
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-          })
-            .then(res => res.json())
-            .then(data => {
-              if (data.status === 'ok') {
-                // Jika check-access sukses, lanjut fetch password
-                fetch(`/vault/decrypt-password/${id}`, {
-                  method: 'GET',
-                  headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                  }
-                })
-                  .then(res => res.json())
-                  .then(decrypt => {
-                    if (decrypt.status === 'ok') {
-                      Swal.fire({
-                        icon: 'info',
-
-                        html: `
-                            <div style="font-size: 1.2rem; color: #6c757d; margin-bottom: 0.5rem;">
-                              Password untuk <strong>${decrypt.hostname}</strong>
-                            </div>
-                            <div style="font-size: 1.6rem; font-family: monospace; background: #f1f1f1; padding: 10px 15px; border-radius: 6px; display: inline-block;" id="passwordText">
-                              ${decrypt.decrypted_password}
-                            </div>
-                            <div class="mt-3">
-                              <button class="btn btn-sm btn-primary" id="copyPasswordBtn">
-                                <i class="bx bx-copy-alt me-1"></i> Salin Password
-                              </button>
-                              <span id="copySuccess" style="display:none; margin-left: 10px; color: green;">Disalin!</span>
-                            </div>
-                            <div class="mt-2" style="font-size: 0.8rem; color: #999;">
-                              Akan tertutup otomatis dalam <span id="countdown">15</span> detik
-                            </div>
-                          `,
-                        showConfirmButton: true,
-                        confirmButtonText: 'Tutup',
-                        allowOutsideClick: false,
-                        timer: 15000, // ✅ ini yang menjamin close otomatis setelah 15 detik
-                        didOpen: () => {
-                          // Tombol Copy
-                          document.getElementById('copyPasswordBtn').addEventListener('click', () => {
-                            const password = document.getElementById('passwordText').innerText;
-                            navigator.clipboard.writeText(password).then(() => {
-                              const copied = document.getElementById('copySuccess');
-                              copied.style.display = 'inline';
-                              setTimeout(() => (copied.style.display = 'none'), 2000);
-                            });
-                          });
-
-                          // Manual countdown sync
-                          let seconds = 15;
-                          const countdown = document.getElementById('countdown');
-                          const timerInterval = setInterval(() => {
-                            seconds--;
-                            countdown.textContent = seconds;
-                            if (seconds <= 0) {
-                              clearInterval(timerInterval);
-                            }
-                          }, 1000);
-                        }
-                      });
-                    } else {
-                      Swal.fire('Gagal', decrypt.message || 'Password tidak ditemukan', 'error');
-                    }
-                  });
-              } else {
-                Swal.fire('Akses Ditolak', data.message || 'Request belum disetujui atau sudah kadaluarsa.', 'warning');
-              }
-            })
-            .catch(err => {
-              Swal.fire('Gagal', err.message || 'Terjadi kesalahan', 'error');
-            });
-        }
       }
     });
 

@@ -111,10 +111,13 @@
 
     <hr class="my-4 border-gray-600" />
 
-    <div class="d-flex justify-content-center mt-3">
-      <a href="javascript:;" class="btn btn-primary me-2 btn-edit-request" data-id="{{ $vault->id }}">Edit</a>
-      <a href="javascript:;" class="btn btn-danger btn-delete-request" data-id="{{ $vault->id }}">Hapus</a>
+    <div class="d-flex justify-content-center mt-3 flex-wrap gap-2">
+      <a href="javascript:;" class="btn btn-success btn-approve-request" data-id="{{ $vault->id }}">Approve</a>
+      <a href="javascript:;" class="btn btn-danger btn-reject-request" data-id="{{ $vault->id }}">Reject</a>
+      <a href="javascript:;" class="btn btn-primary btn-edit-request" data-id="{{ $vault->id }}">Edit</a>
+      <a href="javascript:;" class="btn btn-warning btn-delete-request" data-id="{{ $vault->id }}">Hapus</a>
     </div>
+
     </div>
   </div>
 

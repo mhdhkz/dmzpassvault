@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'Dekripsi')
+@section('title', 'Enkripsi')
 
 @section('vendor-style')
   @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
@@ -11,7 +11,7 @@
 @endsection
 
 @section('page-script')
-  @vite('resources/assets/js/vault-decrypt.js')
+  @vite('resources/assets/js/vault-encrypt.js')
 @endsection
 
 @section('content')
@@ -19,7 +19,7 @@
   <!-- Users List Table -->
   <div class="card">
     <div class="card-header border-bottom custom-header-bg">
-    <h3 class="card-title mb-0 text-center text-white">Dekripsi Vault</h3>
+    <h3 class="card-title mb-0 text-center text-white">Enkripsi Vault</h3>
     </div>
 
     <!-- Collapsible filter -->

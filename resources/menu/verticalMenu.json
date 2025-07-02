@@ -32,15 +32,21 @@
       "submenu": [
         {
           "url": "/vault/vault-form",
-          "name": "Pengajuan Vault",
+          "name": "Permohonan Vault",
           "icon": "menu-icon icon-base bx bx-food-menu",
           "slug": "vault-vault-form"
         },
         {
           "url": "/vault/vault-list",
-          "name": "List Pengajuan",
+          "name": "List Permohonan",
           "icon": "menu-icon icon-base bx bx-detail",
           "slug": "vault-vault-list"
+        },
+        {
+          "url": "/vault/vault-encrypt",
+          "name": "Enkripsi",
+          "icon": "menu-icon icon-base bx bx-lock",
+          "slug": "vault-vault-encrypt"
         },
         {
           "url": "/vault/vault-decrypt",

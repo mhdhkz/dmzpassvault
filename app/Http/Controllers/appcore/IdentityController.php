@@ -15,7 +15,7 @@ class IdentityController extends Controller
 {
   public function getListData()
   {
-    $data = Identity::with('platform')
+    $data = Identity::with('platform:id,name')
       ->select('id', 'hostname', 'ip_addr_srv', 'username', 'functionality', 'platform_id', 'description');
 
     return DataTables::of($data)
