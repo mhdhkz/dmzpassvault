@@ -65,7 +65,7 @@
     </div>
     <div class="col-md-2 d-flex align-items-end">
       <button id="btn-clear-filter" class="btn btn-warning w-70 ml-2">
-      <i class="bx bx-eraser me-1"></i> Clear Filter
+      <i class="bx bx-eraser me-1"></i> Hapus Filter
       </button>
     </div>
     </div>
@@ -83,7 +83,8 @@
         <th data-dt-column="5"><span class="dt-column-title">Waktu Request</span></th>
         <th data-dt-column="6"><span class="dt-column-title">Durasi</span></th>
         <th data-dt-column="7"><span class="dt-column-title">Status</span></th>
-        <th data-dt-column="8" class="dt-orderable-none"><span class="dt-column-title">Actions</span></th>
+        <th data-dt-column="8" class="dt-orderable-none text-center"><span
+          class="dt-column-title text-center">Actions</span></th>
       </tr>
       </thead>
     </table>

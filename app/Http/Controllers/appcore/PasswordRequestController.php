@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\PasswordRequest;
 use App\Models\Identity;
+use App\Models\PasswordAuditLog;
 use App\Models\PasswordVault;
 use Yajra\DataTables\Facades\DataTables;
 use Symfony\Component\Process\Process;
@@ -138,6 +139,19 @@ class PasswordRequestController extends Controller
 
       $passwordRequest->identities()->attach($validated['identity_ids']);
 
+      foreach ($validated['identity_ids'] as $identityId) {
+        PasswordAuditLog::create([
+          'identity_id' => $identityId,
+          'event_type' => 'requested',
+          'event_time' => now(),
+          'user_id' => auth()->id(),
+          'triggered_by' => 'user',
+          'actor_ip_addr' => $request->ip(),
+          'note' => 'User mengajukan permintaan akses password',
+        ]);
+      }
+
+
       DB::commit();
 
       return back()->with('success', 'Permintaan berhasil dikirim.');
@@ -163,7 +177,7 @@ class PasswordRequestController extends Controller
     $timelineLogs = [];
 
     if ($identity) {
-      $timelineLogs = \App\Models\PasswordAuditLog::with('user')
+      $timelineLogs = PasswordAuditLog::with('user')
         ->where('identity_id', $identity->id)
         ->latest('event_time')
         ->take(20)
@@ -187,6 +201,16 @@ class PasswordRequestController extends Controller
       'approved_by' => Auth::id()
     ]);
 
+    PasswordAuditLog::create([
+      'identity_id' => $request->identities()->first()->id ?? null,
+      'event_type' => 'approved',
+      'event_time' => now(),
+      'user_id' => auth()->id(),
+      'triggered_by' => 'user',
+      'actor_ip_addr' => request()->ip(),
+      'note' => 'Permintaan akses disetujui'
+    ]);
+
     return response()->json(['success' => true]);
   }
 
@@ -199,27 +223,78 @@ class PasswordRequestController extends Controller
       'approved_by' => null
     ]);
 
+    PasswordAuditLog::create([
+      'identity_id' => $request->identities()->first()->id ?? null,
+      'event_type' => 'rejected',
+      'event_time' => now(),
+      'user_id' => auth()->id(),
+      'triggered_by' => 'user',
+      'actor_ip_addr' => request()->ip(),
+      'note' => 'Permintaan akses ditolak'
+    ]);
+
     return response()->json(['success' => true]);
   }
 
 
   public function approveMultiple(Request $request)
   {
-    PasswordRequest::whereIn('id', $request->ids)->update([
-      'status' => 'approved',
-      'approved_at' => now(),
-      'approved_by' => Auth::id()
-    ]);
+    $userId = Auth::id();
+    $ipAddr = request()->ip();
+
+    $requests = PasswordRequest::with('identities')->whereIn('id', $request->ids)->get();
+
+    foreach ($requests as $req) {
+      $req->update([
+        'status' => 'approved',
+        'approved_at' => now(),
+        'approved_by' => $userId
+      ]);
+
+      foreach ($req->identities as $identity) {
+        PasswordAuditLog::create([
+          'identity_id' => $identity->id,
+          'event_type' => 'approved',
+          'event_time' => now(),
+          'user_id' => $userId,
+          'triggered_by' => 'user',
+          'actor_ip_addr' => $ipAddr,
+          'note' => 'Permintaan akses disetujui (batch)'
+        ]);
+      }
+    }
+
     return response()->json(['success' => true]);
   }
 
+
   public function rejectMultiple(Request $request)
   {
-    PasswordRequest::whereIn('id', $request->ids)->update([
-      'status' => 'rejected',
-      'approved_at' => null,
-      'approved_by' => null
-    ]);
+    $userId = Auth::id();
+    $ipAddr = request()->ip();
+
+    $requests = PasswordRequest::with('identities')->whereIn('id', $request->ids)->get();
+
+    foreach ($requests as $req) {
+      $req->update([
+        'status' => 'rejected',
+        'approved_at' => null,
+        'approved_by' => null
+      ]);
+
+      foreach ($req->identities as $identity) {
+        PasswordAuditLog::create([
+          'identity_id' => $identity->id,
+          'event_type' => 'rejected',
+          'event_time' => now(),
+          'user_id' => $userId,
+          'triggered_by' => 'user',
+          'actor_ip_addr' => $ipAddr,
+          'note' => 'Permintaan akses ditolak (batch)'
+        ]);
+      }
+    }
+
     return response()->json(['success' => true]);
   }
 
@@ -308,89 +383,55 @@ class PasswordRequestController extends Controller
     ]);
 
     DB::beginTransaction();
-    $results = [];
 
     try {
-      foreach ($request->identity_ids as $identityId) {
-        $identity = Identity::findOrFail($identityId);
+      $scriptPath = public_path('assets/python/encrypt_password.py');
 
-        // 🔐 Jalankan skrip Python
-        $scriptPath = public_path('assets/python/encrypt_password.py');
+      $env = array_merge($_ENV, [
+        'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+        'PATH' => getenv('PATH'),
+        'USERNAME' => getenv('USERNAME') ?: 'webuser',
+      ]);
 
-        // Ambil environment bawaan sistem dan tambahkan yang penting
-        $env = array_merge($_ENV, [
-          'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
-          'PATH' => getenv('PATH'),
-          'USERNAME' => getenv('USERNAME') ?: 'webuser', // Optional
-        ]);
+      // 🔁 Jalankan sekali untuk semua identity
+      $process = new Process([
+        env('PYTHON_PATH', 'python'),
+        $scriptPath,
+        '--identities=' . json_encode($request->identity_ids),
+        '--updated_by=' . auth()->id(),
+        '--ip_addr=' . $request->ip(),
+      ], base_path(), $env);
 
-        $process = new Process([
-          env('PYTHON_PATH', 'python'), // default ke 'python3' kalau .env kosong
-          $scriptPath,
-          '--identity=' . $identityId
-        ], base_path(), $env); // ⬅️ Ini yang penting: base_path & env
+      $process->run();
 
-        $process->run();
-
-
-        if (!$process->isSuccessful()) {
-          throw new ProcessFailedException($process);
-        }
-
-        //logger('Raw output from Python:', [$process->getOutput()]);
-        $output = json_decode($process->getOutput(), true);
-
-        // Jika output valid dan ada password
-        if (!isset($output['encrypted'])) {
-          throw new \Exception('Output dari Python tidak valid.');
-        }
-
-        $encrypted = $output['encrypted'];
-
-        // Cek apakah vault sudah ada
-        $vault = PasswordVault::where('identity_id', $identityId)->first();
-
-        if (!$vault) {
-          $lastId = PasswordVault::where('id', 'like', 'p%')
-            ->orderByDesc('id')
-            ->lockForUpdate()
-            ->value('id');
-
-          $lastNumber = $lastId ? intval(substr($lastId, 1)) : 0;
-          $newId = 'p' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-          $vault = new PasswordVault([
-            'id' => $newId,
-            'identity_id' => $identityId,
-            'created_at' => now()
-          ]);
-        }
-
-        $results[] = [
-          'identity_id' => $identityId,
-          'status' => $output['status'],
-          'message' => $output['message']
-        ];
-
+      if (!$process->isSuccessful()) {
+        throw new ProcessFailedException($process);
       }
 
+      $results = json_decode($process->getOutput(), true);
+
+      if (!is_array($results)) {
+        throw new \Exception("Output Python tidak valid.");
+      }
+
+      // Optional: simpan ke log atau hanya dikembalikan saja
       DB::commit();
 
       return response()->json([
         'status' => 'ok',
         'results' => $results,
-        'message' => 'Proses generate selesai.'
+        'message' => 'Generate password selesai dengan status per server.'
       ]);
+
     } catch (\Throwable $e) {
       DB::rollBack();
 
       return response()->json([
         'status' => 'error',
-        'message' => 'Terjadi kesalahan saat menyimpan data.',
+        'message' => 'Terjadi kesalahan saat generate password.',
         'error' => $e->getMessage()
       ], 500);
     }
-
   }
 
   public function checkAccess($identityId)
@@ -492,6 +533,16 @@ class PasswordRequestController extends Controller
         'reveal_ip' => request()->ip(),
       ]);
 
+      PasswordAuditLog::create([
+        'identity_id' => $identityId,
+        'event_type' => 'accessed',
+        'event_time' => now(),
+        'user_id' => auth()->id(),
+        'triggered_by' => 'user',
+        'actor_ip_addr' => request()->ip(),
+        'note' => 'Password berhasil diakses (dekripsi)',
+      ]);
+
       return response()->json([
         'status' => 'ok',
         'hostname' => $vault->identity->hostname ?? null,
@@ -504,6 +555,106 @@ class PasswordRequestController extends Controller
         'message' => 'Gagal menjalankan proses dekripsi.',
         'error' => $e->getMessage()
       ], 500);
+    }
+  }
+
+  public function decryptMultiple(Request $request)
+  {
+    $ids = $request->input('ids', []);
+
+    if (empty($ids)) {
+      return response()->json(['status' => 'error', 'message' => 'Tidak ada identity yang dipilih.']);
+    }
+
+    $results = [];
+
+    foreach ($ids as $id) {
+      try {
+        $identity = Identity::findOrFail($id);
+
+        // Jalankan Python script decrypt
+        $scriptPath = public_path('assets/python/decrypt_password.py');
+
+        $env = array_merge($_ENV, [
+          'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+          'PATH' => getenv('PATH'),
+          'USERNAME' => getenv('USERNAME') ?: 'webuser'
+        ]);
+
+        $process = new Process([
+          env('PYTHON_PATH', 'python'),
+          $scriptPath,
+          '--identity=' . $identity->id
+        ], base_path(), $env); // <- disamakan dengan encrypt
+
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+          throw new \Exception($process->getErrorOutput());
+        }
+
+        //logger('Raw output from Python:', [$process->getOutput()]);
+        $output = trim($process->getOutput());
+        $data = json_decode($output, true);
+
+        if (!isset($data['decrypted'])) {
+          throw new \Exception('Akses vault belum disetujui atau sudah expired.');
+        }
+
+        $password = $data['decrypted'];
+
+        PasswordAuditLog::create([
+          'identity_id' => $identity->id,
+          'event_type' => 'accessed',
+          'event_time' => now(),
+          'user_id' => auth()->id(),
+          'triggered_by' => 'user',
+          'actor_ip_addr' => request()->ip(),
+          'note' => 'Password berhasil diakses (dekripsi) melalui batch',
+        ]);
+
+        $identity->requests()
+          ->whereNull('revealed_at')
+          ->where('status', 'approved')
+          ->get()
+          ->each(function ($request) {
+            $request->update([
+              'revealed_by' => auth()->id(),
+              'revealed_at' => now(),
+              'reveal_ip' => request()->ip()
+            ]);
+          });
+
+
+        $results[] = [
+          'identity_id' => $identity->id,
+          'hostname' => $identity->hostname,
+          'password' => $password
+        ];
+      } catch (\Throwable $e) {
+        $results[] = [
+          'identity_id' => $id,
+          'hostname' => '(Gagal)',
+          'password' => '[Error: ' . $e->getMessage() . ']'
+        ];
+      }
+    }
+
+    return response()->json([
+      'status' => 'ok',
+      'data' => $results
+    ]);
+  }
+  public function deleteMultiple(Request $request)
+  {
+    $ids = $request->input('ids', []);
+
+    try {
+      PasswordRequest::whereIn('id', $ids)->delete();
+
+      return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
   }
 

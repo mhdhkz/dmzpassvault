@@ -1,0 +1,19 @@
+
+   INFO  No scheduled commands are ready to run.  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+  2025-07-05 16:04:06 Running ["artisan" rotate:expired] ..................................................... 6s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+

@@ -13,6 +13,18 @@ use Illuminate\Validation\Rule;
 
 class IdentityController extends Controller
 {
+  private function logAudit($identityId, $eventType, $note = null)
+  {
+    PasswordAuditLog::create([
+      'identity_id' => $identityId,
+      'event_type' => $eventType,
+      'event_time' => now(),
+      'user_id' => auth()->id(),
+      'triggered_by' => 'user',
+      'actor_ip_addr' => request()->ip(),
+      'note' => $note,
+    ]);
+  }
   public function getListData()
   {
     $data = Identity::with('platform:id,name')
@@ -76,7 +88,8 @@ class IdentityController extends Controller
       $validated['created_by'] = auth()->id();
       $validated['updated_by'] = auth()->id();
 
-      Identity::create($validated);
+      $identity = Identity::create($validated);
+      $this->logAudit($identity->id, 'created', 'Identity dibuat oleh user');
       DB::commit();
 
       return redirect()->route('identity-identity-form')->with('success', 'Identity berhasil ditambahkan.');
@@ -108,6 +121,7 @@ class IdentityController extends Controller
       return response()->json(['success' => false, 'message' => 'Data tidak ditemukan']);
     }
 
+    $this->logAudit($identity->id, 'deleted', 'Identity dihapus oleh user');
     $identity->delete();
 
     return response()->json(['success' => true]);
@@ -121,7 +135,7 @@ class IdentityController extends Controller
     $timelineLogs = PasswordAuditLog::with('user')
       ->where('identity_id', $id)
       ->orderByDesc('event_time')
-      ->take(20)
+      ->take(5)
       ->get();
 
     return view('content.pages.identity-detail', compact('identity', 'platforms', 'timelineLogs'));
@@ -163,6 +177,7 @@ class IdentityController extends Controller
     $data['updated_by'] = auth()->id();
 
     $identity->update($data);
+    $this->logAudit($identity->id, 'updated', 'Identity diperbarui oleh user');
 
     return response()->json([
       'success' => true,
@@ -183,9 +198,10 @@ class IdentityController extends Controller
         ->addIndexColumn()
         ->editColumn('event_type', function ($row) {
           return match ($row->event_type) {
-            'created' => 'Dibuat',
-            'updated' => 'Diperbarui',
-            'accessed' => 'Diakses',
+            'created' => 'Created',
+            'updated' => 'Updated',
+            'deleted' => 'Removed',
+            'accessed' => 'Accessed',
             default => ucfirst($row->event_type),
           };
         })

@@ -41,7 +41,7 @@ return new class extends Migration {
     Schema::create('password_vaults', function (Blueprint $table) {
       $table->string('id', 10)->primary();
       $table->string('identity_id', 10);
-      $table->binary('encrypted_password');
+      $table->binary('encrypted_password')->nullable();
       $table->timestamp('created_at')->useCurrent();
       $table->timestamp('last_accessed_at')->nullable();
       $table->timestamp('last_changed_at')->useCurrent();
@@ -54,18 +54,20 @@ return new class extends Migration {
 
     Schema::create('password_jobs', function (Blueprint $table) {
       $table->id();
-      $table->string('identity_id', 10);
-      $table->dateTime('scheduled_at');
-      $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
+      $table->string('job_type', 50)->default('rotate_all'); // contoh: rotate_all, rotate_selected
+      $table->enum('status', ['pending', 'running', 'done', 'failed'])->default('pending');
+      $table->dateTime('started_at')->nullable();
+      $table->dateTime('finished_at')->nullable();
+      $table->unsignedInteger('total_success')->default(0);
+      $table->unsignedInteger('total_failed')->default(0);
       $table->timestamps();
-
-      $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
     });
 
     Schema::create('password_audit_logs', function (Blueprint $table) {
       $table->id();
       $table->string('identity_id', 10);
-      $table->enum('event_type', ['created', 'updated', 'rotated', 'requested', 'accessed']);
+      $table->enum('event_type', ['created', 'updated', 'deleted', 'rotated', 'requested', 'accessed', 'approved', 'rejected']);
+      $table->index('event_type');
       $table->dateTime('event_time')->useCurrent();
       $table->unsignedBigInteger('user_id')->nullable();
       $table->enum('triggered_by', ['user', 'system'])->default('user');

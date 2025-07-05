@@ -173,6 +173,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="btn btn-sm btn-danger btn-reject text-white" title="Reject" data-id="${row.id}">
                   <i class="icon-base bx bx-x"></i>
                 </button>
+                <button class="btn btn-sm btn-secondary btn-delete-request text-white" title="Hapus" data-id="${row.id}">
+                  <i class="icon-base bx bx-trash"></i>
+                </button>
               </div>
             `
         }
@@ -270,10 +273,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     {
                       text: `
-            <span class="d-flex align-items-center">
-              <i class="bx bx-x-circle me-2"></i>Reject Terpilih
-            </span>
-          `,
+                        <span class="d-flex align-items-center">
+                          <i class="bx bx-x-circle me-2"></i>Reject Terpilih
+                        </span>
+                      `,
                       className: 'dropdown-item',
                       action: function () {
                         const selectedData = dtVault.rows({ selected: true }).data().toArray();
@@ -325,6 +328,64 @@ document.addEventListener('DOMContentLoaded', function () {
                           }
                         });
                       }
+                    },
+                    {
+                      text: `
+                        <span class="d-flex align-items-center">
+                          <i class="bx bx-trash me-2"></i>Hapus Terpilih
+                        </span>
+                      `,
+                      className: 'dropdown-item',
+                      action: function () {
+                        const selectedData = dtVault.rows({ selected: true }).data().toArray();
+                        if (!selectedData.length) {
+                          Swal.fire({
+                            icon: 'warning',
+                            title: 'Tidak ada data terpilih',
+                            text: 'Silakan pilih data untuk dihapus',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                              confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                          });
+                          return;
+                        }
+
+                        const selectedIds = selectedData.map(row => row.id);
+                        Swal.fire({
+                          title: 'Hapus Permintaan Terpilih?',
+                          icon: 'warning',
+                          showCancelButton: true,
+                          confirmButtonText: 'Hapus',
+                          cancelButtonText: 'Batal',
+                          customClass: {
+                            confirmButton: 'btn btn-danger',
+                            cancelButton: 'btn btn-label-secondary'
+                          },
+                          buttonsStyling: false
+                        }).then(result => {
+                          if (result.isConfirmed) {
+                            fetch(`/vault/delete/multiple`, {
+                              method: 'POST',
+                              headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify({ ids: selectedIds })
+                            })
+                              .then(res => res.json())
+                              .then(res => {
+                                if (res.success) {
+                                  showToast('success', 'Permintaan dihapus');
+                                  dtVault.ajax.reload();
+                                } else {
+                                  showToast('error', res.message || 'Gagal menghapus');
+                                }
+                              });
+                          }
+                        });
+                      }
                     }
                   ]
                 }
@@ -362,6 +423,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
         tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+        $(document).off('click', '.btn-delete-request');
+
+        // Bind ulang tombol hapus satuan
+        $(document).on('click', '.btn-delete-request', function () {
+          const id = $(this).data('id');
+          Swal.fire({
+            title: 'Yakin hapus request ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal',
+            customClass: {
+              confirmButton: 'btn btn-danger',
+              cancelButton: 'btn btn-label-secondary'
+            }
+          }).then(result => {
+            if (result.isConfirmed) {
+              fetch(`/vault/${id}`, {
+                method: 'DELETE',
+                headers: {
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+              })
+                .then(res => res.json())
+                .then(res => {
+                  if (res.success) {
+                    Swal.fire('Berhasil', 'Request berhasil dihapus', 'success');
+                    dtVault.ajax.reload();
+                  } else {
+                    Swal.fire('Gagal', res.message || 'Gagal menghapus request', 'error');
+                  }
+                })
+                .catch(() => Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus', 'error'));
+            }
+          });
+        });
       }
     });
 
@@ -546,28 +643,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#editRevealedAt').val($btn.data('revealed_at'));
         $('#editRevealerIp').val($btn.data('reveal_ip'));
         $('#editRevokedAt').val($btn.data('revoked_at'));
-      });
-
-      // === Tombol Delete Vault Request ===
-      $(document).on('click', '.btn-delete-request', function () {
-        const id = $(this).data('id');
-        Swal.fire({
-          title: 'Yakin hapus request ini?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Ya, hapus',
-          cancelButtonText: 'Batal'
-        }).then(result => {
-          if (result.isConfirmed) {
-            $.ajax({
-              url: `/vault/${id}`,
-              method: 'DELETE',
-              data: { _token: '{{ csrf_token() }}' },
-              success: () => location.reload(),
-              error: () => Swal.fire('Gagal menghapus', '', 'error')
-            });
-          }
-        });
       });
     });
 

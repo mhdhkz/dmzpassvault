@@ -58,7 +58,7 @@
 
         <th data-dt-column="2" class="dt-orderable-none" tabindex="-1" aria-label="No: Not sortable">No</th>
 
-        <th data-dt-column="3" class="sorting" tabindex="0" aria-label="Hostname: Activate to sort">
+        <th data-dt-column="3" class="sorting text-center" tabindex="0" aria-label="Hostname: Activate to sort">
         <span class="dt-column-title" role="button">Hostname</span>
         </th>
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\pages\Page2;
 use App\Http\Controllers\pages\IdentityList;
 use App\Http\Controllers\pages\VaultEncrypt;
 use App\Http\Controllers\pages\VaultDecrypt;
+use App\Http\Controllers\pages\AuditLogging;
 use App\Http\Controllers\authentications\RegisterController;
 use App\Http\Controllers\appcore\IdentityController;
 use App\Http\Controllers\appcore\PasswordRequestController;
@@ -45,12 +46,14 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::get('/vault/vault-encrypt', [VaultEncrypt::class, 'index'])->name('vault-vault-encrypt');
   Route::post('/vault/generate-password', [PasswordRequestController::class, 'generatePassword']);
   Route::get('/vault/vault-decrypt', [VaultDecrypt::class, 'index'])->name('vault-vault-decrypt');
+  Route::post('/vault/decrypt/multiple', [PasswordRequestController::class, 'decryptMultiple']);
   Route::get('/vault/vault-list', [PasswordRequestController::class, 'index'])->name('vault-vault-list');
   Route::get('/vault/data', [PasswordRequestController::class, 'getListData'])->name('vault-vault-data');
   Route::get('/vault/vault-form', [PasswordRequestController::class, 'create'])->name('vault-vault-form');
   Route::post('/vault/vault-form', [PasswordRequestController::class, 'store'])->name('vault.store');
   Route::post('/vault/approve/multiple', [PasswordRequestController::class, 'approveMultiple']);
   Route::post('/vault/reject/multiple', [PasswordRequestController::class, 'rejectMultiple']);
+  Route::post('/vault/delete/multiple', [PasswordRequestController::class, 'deleteMultiple']);
   Route::get('/vault/next-request-id', [PasswordRequestController::class, 'getNextRequestId'])->name('vault.next-id');
   Route::get('/vault/check-access/{identity}', [PasswordRequestController::class, 'checkAccess']);
   Route::get('/vault/decrypt-password/{identity}', [PasswordRequestController::class, 'decryptPassword']);
@@ -60,4 +63,8 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
   Route::post('/vault/{id}/approve', [PasswordRequestController::class, 'approve'])->name('vault.approve');
   Route::post('/vault/{id}/reject', [PasswordRequestController::class, 'reject'])->name('vault.reject');
   Route::get('/vault/{id}/json', [PasswordRequestController::class, 'getJson']);
+
+  //admin
+  Route::get('/admin/audit-logs', [AuditLogging::class, 'index'])->name('admin-audit-logs');
+  Route::get('/admin/audit-logs/data', [AuditLogging::class, 'getListData']);
 });

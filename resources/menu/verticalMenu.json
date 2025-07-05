@@ -57,6 +57,12 @@
       ]
     },
     {
+      "url": "/admin/audit-logs",
+      "name": "Audit Log",
+      "icon": "menu-icon icon-base bx bx-code-block",
+      "slug": "admin-audit-logs"
+    },
+    {
       "url": "/page-2",
       "name": "Manajemen Akun",
       "icon": "menu-icon icon-base bx bx-user",

@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
-from vault_config import DB_CONFIG, AES_KEY, LINUX_ROOT_PASSWORD, DB_ROOT_PASSWORD
+from vault_config import DB_CONFIG, AES_KEY, LINUX_ROOT_PASSWORD, DB_ROOT_PASSWORD, DB_ENCRYPTION_KEY
 
 # ===== UTILITIES =====
 def generate_password(length=14):
@@ -64,8 +64,8 @@ def change_db_password(ip_addr, target_user, new_password):
         print(f"DB error: {e}", file=sys.stderr, flush=True)
         return False
 
-# ===== SIMPAN =====
-def save_to_vault(identity_id, encrypted_password, updated_by=1):
+# ===== SIMPAN (dengan AES_ENCRYPT) =====
+def save_to_vault(identity_id, encrypted_password, updated_by):
     conn = pymysql.connect(**DB_CONFIG)
     try:
         with conn.cursor() as cur:
@@ -75,21 +75,21 @@ def save_to_vault(identity_id, encrypted_password, updated_by=1):
             if row:
                 cur.execute("""
                     UPDATE password_vaults
-                    SET encrypted_password = %s,
+                    SET encrypted_password = AES_ENCRYPT(%s, %s),
                         last_changed_by = %s,
                         last_changed_at = %s
                     WHERE identity_id = %s
-                """, (encrypted_password, updated_by, datetime.now(), identity_id))
+                """, (encrypted_password, DB_ENCRYPTION_KEY, updated_by, datetime.now(), identity_id))
             else:
                 cur.execute("SELECT id FROM password_vaults WHERE id LIKE 'p%%' ORDER BY id DESC LIMIT 1")
                 last_id = cur.fetchone()
                 new_number = int(last_id[0][1:]) + 1 if last_id else 1
-                new_id = f"p{new_number:03d}"
+                new_id = f"P{new_number:03d}"
 
                 cur.execute("""
                     INSERT INTO password_vaults (id, identity_id, encrypted_password, last_changed_by, last_changed_at)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (new_id, identity_id, encrypted_password, updated_by, datetime.now()))
+                    VALUES (%s, %s, AES_ENCRYPT(%s, %s), %s, %s)
+                """, (new_id, identity_id, encrypted_password, DB_ENCRYPTION_KEY, updated_by, datetime.now()))
         conn.commit()
         print("Password terenkripsi dan disimpan ke database.", file=sys.stderr, flush=True)
     finally:
@@ -117,9 +117,33 @@ def get_identity_info(identity_id):
     finally:
         conn.close()
 
-# ===== MAIN =====
-def main(identity_id):
-    print(f"🔄 Mulai proses untuk identity {identity_id}", file=sys.stderr, flush=True)
+# ===== AUDIT LOG =====
+def insert_audit_log(identity_id, event_type, user_id, triggered_by, note=None, ip_addr=None):
+    conn = pymysql.connect(**DB_CONFIG)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO password_audit_logs (
+                    identity_id, event_type, event_time, user_id,
+                    triggered_by, actor_ip_addr, note, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            """, (
+                identity_id,
+                event_type,
+                datetime.now(),
+                user_id,
+                triggered_by,
+                ip_addr,
+                note
+            ))
+        conn.commit()
+    finally:
+        conn.close()
+
+# ===== PROSES SINGLE =====
+def main(identity_id, updated_by, ip_addr=None):
+    print(f"Mulai proses untuk identity {identity_id}", file=sys.stderr, flush=True)
 
     try:
         info = get_identity_info(identity_id)
@@ -128,7 +152,7 @@ def main(identity_id):
         platform = info['platform']
 
         password = generate_password()
-        print(f"🔐 Password baru: {password}", file=sys.stderr, flush=True)
+        print(f"Password baru: {password}", file=sys.stderr, flush=True)
 
         success = False
         if platform == 'linux':
@@ -146,7 +170,17 @@ def main(identity_id):
             }
 
         encrypted = encrypt_aes192(password, AES_KEY)
-        save_to_vault(identity_id, encrypted)
+        save_to_vault(identity_id, encrypted, updated_by)
+
+        # Audit log
+        insert_audit_log(
+            identity_id=identity_id,
+            event_type='rotated',
+            user_id=updated_by,
+            triggered_by='system' if updated_by == 1 else 'user',
+            note='Rotasi password otomatis oleh sistem' if updated_by == 1 else 'Rotasi password manual oleh user',
+            ip_addr=ip_addr
+        )
 
         return {
             "identity_id": identity_id,
@@ -163,11 +197,30 @@ def main(identity_id):
             "message": str(e)
         }
 
+# ===== MULTIPLE LOOPING =====
+def main_batch(identity_ids, updated_by, ip_addr=None):
+    results = []
+
+    for identity_id in identity_ids:
+        try:
+            result = main(identity_id, updated_by, ip_addr)
+            results.append(result)
+        except Exception as e:
+            results.append({
+                "identity_id": identity_id,
+                "status": "error",
+                "message": str(e)
+            })
+
+    print(json.dumps(results), flush=True)
+
 # ===== ENTRY POINT =====
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--identity', required=True)
+    parser.add_argument('--identities', required=True, help="List of identity IDs in JSON format")
+    parser.add_argument('--updated_by', type=int, required=True)
+    parser.add_argument('--ip_addr', required=False)
     args = parser.parse_args()
 
-    result = main(args.identity)
-    print(json.dumps(result), flush=True)
+    identity_list = json.loads(args.identities)
+    main_batch(identity_list, args.updated_by, args.ip_addr)

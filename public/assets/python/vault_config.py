@@ -15,3 +15,4 @@ DB_CONFIG = {
 AES_KEY = os.getenv("AES_KEY").encode("utf-8")
 LINUX_ROOT_PASSWORD = os.getenv("LINUX_ROOT_PASSWORD")
 DB_ROOT_PASSWORD = os.getenv("DB_ROOT_PASSWORD")
+DB_ENCRYPTION_KEY = os.getenv("DB_ENCRYPTION_KEY", "db_secret_key")

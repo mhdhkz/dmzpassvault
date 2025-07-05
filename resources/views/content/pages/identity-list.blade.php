@@ -143,7 +143,7 @@
 
         <th data-dt-column="2" class="dt-orderable-none" tabindex="-1" aria-label="No: Not sortable">No</th>
 
-        <th data-dt-column="3" class="sorting" tabindex="0" aria-label="Hostname: Activate to sort">
+        <th data-dt-column="3" class="sorting text-center" tabindex="0" aria-label="Hostname: Activate to sort">
         <span class="dt-column-title" role="button">Hostname</span>
         </th>
 
@@ -162,8 +162,8 @@
         <th data-dt-column="7" class="sorting" tabindex="0" aria-label="Platform: Activate to sort">
         <span class="dt-column-title" role="button">Platform</span>
         </th>
-        <th data-dt-column="8" class="dt-orderable-none" tabindex="-1" aria-label="Actions: Not sortable">
-        <span class="dt-column-title">Actions</span>
+        <th data-dt-column="8" class="dt-orderable-none text-center" tabindex="-1" aria-label="Actions: Not sortable">
+        <span class="dt-column-title text-center">Actions</span>
         </th>
       </tr>
       </thead>

@@ -103,7 +103,16 @@ $(function () {
         buttonsStyling: false
       }).then(result => {
         if (result.isConfirmed) {
-          form.submit();
+          Swal.fire({
+            title: 'Menyimpan...',
+            text: 'Mohon tunggu sebentar.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+              Swal.showLoading();
+              form.submit();
+            }
+          });
         } else {
           Swal.fire({
             icon: 'info',

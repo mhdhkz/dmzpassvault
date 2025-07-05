@@ -4,6 +4,15 @@
 
 'use strict';
 
+function escapeHtml(unsafe) {
+  return unsafe
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 // Datatable (js)
 document.addEventListener('DOMContentLoaded', function (e) {
   let borderColor, bodyBg, headingColor;
@@ -174,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
           render: (data, type, full, meta) => {
             return `
       <div class="d-flex align-items-center">
-        <a href="javascript:;" class="btn btn-sm btn-primary text-white d-flex align-items-center gap-1 btn-decrypt-password" data-id="${full.id}" title="Lihat Password">
+        <a href="javascript:;" class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 btn-decrypt-password" data-id="${full.id}" title="Lihat Password">
           <i class="bx bx-key"></i> <small>Lihat Password</small>
         </a>
       </div>
@@ -291,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
             btn.type = 'button';
             btn.className = 'btn btn-primary ms-2';
             btn.id = 'requestDecryptBtn';
-            btn.innerHTML = '<i class="bx bx-lock-open-alt me-1"></i> Request Dekripsi';
+            btn.innerHTML = '<i class="bx bx-lock-open-alt me-1"></i> Dekripsi Terpilih';
 
             const wrapperBtn = document.createElement('div');
             wrapperBtn.className = 'd-flex align-items-center ms-2';
@@ -299,12 +308,93 @@ document.addEventListener('DOMContentLoaded', function (e) {
             searchWrapper.parentElement.appendChild(wrapperBtn);
 
             btn.addEventListener('click', function () {
+              const selectedIds = dt_user.rows({ selected: true }).data().pluck('id').toArray();
+
+              if (selectedIds.length === 0) {
+                Swal.fire('Tidak Ada Data', 'Pilih minimal satu identity untuk dekripsi.', 'warning');
+                return;
+              }
+
               Swal.fire({
-                icon: 'info',
-                title: 'Request Terkirim',
-                text: 'Permintaan dekripsi berhasil dikirim.',
-                timer: 2000,
-                showConfirmButton: false
+                title: 'Dekripsi Password',
+                text: `Yakin ingin mendekripsi ${selectedIds.length} password?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Dekripsi',
+                cancelButtonText: 'Batal'
+              }).then(result => {
+                if (result.isConfirmed) {
+                  Swal.fire({
+                    title: 'Sedang memproses...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                  });
+
+                  fetch('/vault/decrypt/multiple', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ ids: selectedIds })
+                  })
+                    .then(res => res.json())
+                    .then(result => {
+                      Swal.close();
+                      if (result.status === 'ok') {
+                        const html = result.data
+                          .map(item => {
+                            if (item.password.startsWith('[Error')) {
+                              return `
+                                  <p style="margin: 0.3rem 0;">
+                                    <span style="color:crimson;">${escapeHtml(item.password)}</span>
+                                  </p>`;
+                            } else {
+                              return `
+                                  <p style="margin: 0.3rem 0;">
+                                    <span style=font-size: 1rem">${item.hostname}:</span>
+                                    <span style="display:inline-block; font-size: 1rem; font-weight: bold; font-family: monospace; background: #f3f3f3; padding: 4px 10px; border-radius: 6px; margin-top: 4px;">
+                                      ${escapeHtml(item.password)}
+                                    </span>
+                                  </p>`;
+                            }
+                          })
+                          .join('');
+
+                        Swal.fire({
+                          title: 'Hasil Dekripsi',
+                          html: `
+                            <div id="decryptResults">
+                              ${html}
+                            </div>
+                            <div class="mt-3">
+                              <button class="btn btn-sm btn-primary" id="copyAllPasswordsBtn">
+                                <i class="bx bx-copy-alt me-1"></i> Salin Semua Password
+                              </button>
+                              <span id="copyAllSuccess" style="display:none; margin-left: 10px; color: green;">Disalin!</span>
+                            </div>
+                          `,
+                          width: 700,
+                          confirmButtonText: 'Tutup',
+                          didOpen: () => {
+                            document.getElementById('copyAllPasswordsBtn')?.addEventListener('click', () => {
+                              const passList = Array.from(document.querySelectorAll('#decryptResults span'))
+                                .map(el => el.textContent.trim())
+                                .filter(p => !p.startsWith('[Error')); // exclude error
+                              const allText = passList.join('\n');
+                              navigator.clipboard.writeText(allText).then(() => {
+                                const copied = document.getElementById('copyAllSuccess');
+                                copied.style.display = 'inline';
+                                setTimeout(() => (copied.style.display = 'none'), 2000);
+                              });
+                            });
+                          }
+                        });
+                      } else {
+                        Swal.fire('Gagal', result.message || 'Terjadi kesalahan saat dekripsi.', 'error');
+                      }
+                    });
+                }
               });
             });
           }
@@ -410,8 +500,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                             <div style="font-size: 1.2rem; color: #6c757d; margin-bottom: 0.5rem;">
                               Password untuk <strong>${decrypt.hostname}</strong>
                             </div>
-                            <div style="font-size: 1.6rem; font-family: monospace; background: #f1f1f1; padding: 10px 15px; border-radius: 6px; display: inline-block;" id="passwordText">
-                              ${decrypt.decrypted_password}
+                            <div style="font-size: 2.2rem; font-family: monospace; background: #f1f1f1; padding: 6px 10px; border-radius: 6px; display: inline-block;" id="passwordText">
                             </div>
                             <div class="mt-3">
                               <button class="btn btn-sm btn-primary" id="copyPasswordBtn">
@@ -428,6 +517,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                         allowOutsideClick: false,
                         timer: 15000, // ✅ ini yang menjamin close otomatis setelah 15 detik
                         didOpen: () => {
+                          document.getElementById('passwordText').textContent = decrypt.decrypted_password;
                           // Tombol Copy
                           document.getElementById('copyPasswordBtn').addEventListener('click', () => {
                             const password = document.getElementById('passwordText').innerText;

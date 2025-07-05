@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
           render: (data, type, full, meta) => {
             return `
       <div class="d-flex align-items-center">
-        <a href="javascript:;" class="btn btn-sm btn-primary text-white d-flex align-items-center gap-1 btn-generate-password" data-id="${full.id}" title="Generate">
+        <a href="javascript:;" class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 btn-generate-password" data-id="${full.id}" title="Generate">
           <i class="bx bx-key"></i> <small>Generate</small>
         </a>
       </div>
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
             btn.type = 'button';
             btn.className = 'btn btn-primary ms-2';
             btn.id = 'requestEncryptBtn';
-            btn.innerHTML = '<i class="bx bx-lock-open-alt me-1"></i> Generate Batch';
+            btn.innerHTML = '<i class="bx bx-lock me-1"></i> Generate Terpilih';
 
             const wrapperBtn = document.createElement('div');
             wrapperBtn.className = 'd-flex align-items-center ms-2';
@@ -299,12 +299,61 @@ document.addEventListener('DOMContentLoaded', function (e) {
             searchWrapper.parentElement.appendChild(wrapperBtn);
 
             btn.addEventListener('click', function () {
+              const selectedIds = dt_user.rows({ selected: true }).data().pluck('id').toArray();
+
+              if (selectedIds.length === 0) {
+                Swal.fire('Tidak Ada Data', 'Pilih minimal satu identity untuk generate password.', 'warning');
+                return;
+              }
+
               Swal.fire({
-                icon: 'info',
-                title: 'Request Terkirim',
-                text: 'Permintaan enkripsi berhasil dikirim.',
-                timer: 2000,
-                showConfirmButton: false
+                title: 'Generate Password',
+                text: `Yakin ingin generate dan enkripsi ${selectedIds.length} password?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal'
+              }).then(result => {
+                if (result.isConfirmed) {
+                  Swal.fire({
+                    title: 'Sedang memproses...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                  });
+
+                  fetch('/vault/generate-password', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ identity_ids: selectedIds })
+                  })
+                    .then(res => res.json())
+                    .then(result => {
+                      Swal.close();
+                      if (result.status === 'ok') {
+                        let html = result.results
+                          .map(
+                            row => `
+                              <div class="mb-2">
+                               <span style="display:inline-block; font-size: 1rem; font-weight: bold; font-family: monospace; padding: 4px 10px; border-radius: 6px; margin-top: 4px;">${row.message}</span>
+                              </div>
+                            `
+                          )
+                          .join('');
+
+                        Swal.fire({
+                          title: 'Hasil Generate',
+                          html,
+                          width: 600,
+                          confirmButtonText: 'Tutup'
+                        });
+                      } else {
+                        Swal.fire('Gagal', result.message || 'Terjadi kesalahan saat generate.', 'error');
+                      }
+                    });
+                }
               });
             });
           }
@@ -403,24 +452,25 @@ document.addEventListener('DOMContentLoaded', function (e) {
           $.ajax({
             url: '/vault/generate-password',
             method: 'POST',
-            data: {
-              _token: csrf,
-              identity_ids: [identityId]
+            data: JSON.stringify({ identity_ids: [identityId] }),
+            contentType: 'application/json',
+            headers: {
+              'X-CSRF-TOKEN': csrf
             },
             success: function (res) {
               Swal.close();
-              if (res.status === 'ok') {
-                const detail = res.results?.[0]?.message || res.message;
+              const result = res.results?.[0];
+              if (res.status === 'ok' && result?.status === 'success') {
                 Swal.fire({
                   icon: 'success',
                   title: 'Berhasil',
-                  text: detail
+                  text: result.message
                 });
               } else {
                 Swal.fire({
                   icon: 'error',
                   title: 'Gagal',
-                  text: res.message || 'Terjadi kesalahan.'
+                  text: result?.message || res.message || 'Terjadi kesalahan.'
                 });
               }
             },

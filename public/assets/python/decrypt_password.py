@@ -4,10 +4,10 @@ import pymysql
 import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from vault_config import DB_CONFIG, AES_KEY
+from vault_config import DB_CONFIG, AES_KEY, DB_ENCRYPTION_KEY
 
 
-# ===== FUNGSI DEKRIPSI =====
+# ===== FUNGSI DEKRIPSI AES-192 (PYTHON) =====
 def decrypt_aes192(encrypted_data: bytes, key: bytes) -> str:
     raw = base64.b64decode(encrypted_data)
     iv = raw[:16]
@@ -16,16 +16,20 @@ def decrypt_aes192(encrypted_data: bytes, key: bytes) -> str:
     pt = unpad(cipher.decrypt(ct), AES.block_size)
     return pt.decode('utf-8')
 
-# ===== AMBIL DATA DARI DATABASE =====
+# ===== AMBIL DATA DARI DB (dengan AES_DECRYPT) =====
 def get_encrypted_password(identity_id):
     conn = pymysql.connect(**DB_CONFIG)
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT encrypted_password FROM password_vaults WHERE identity_id = %s", (identity_id,))
+            cur.execute("""
+                SELECT CAST(AES_DECRYPT(encrypted_password, %s) AS CHAR)
+                FROM password_vaults
+                WHERE identity_id = %s
+            """, (DB_ENCRYPTION_KEY, identity_id))
             row = cur.fetchone()
-            if not row:
-                raise Exception("Data tidak ditemukan.")
-            return row[0]
+            if not row or not row[0]:
+                raise Exception("Password terenkripsi tidak ditemukan atau gagal didekripsi di DB.")
+            return row[0].encode()  # ubah ke bytes untuk decrypt_aes192
     finally:
         conn.close()
 
