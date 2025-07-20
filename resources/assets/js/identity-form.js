@@ -31,7 +31,7 @@ $(function () {
   $ipInput.after($ipError);
 
   let hostnameTimer, ipTimer;
-  const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})(\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})){3}$/;
+  const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
 
   $hostnameInput.on('input', function () {
     clearTimeout(hostnameTimer);
@@ -54,6 +54,8 @@ $(function () {
     if (ip && !ipv4Regex.test(ip)) {
       $ipError.text('Format IP Address tidak valid! Contoh: 192.168.1.1');
       return;
+    } else {
+      $ipError.text('');
     }
 
     if (ip !== '') {

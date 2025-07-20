@@ -1,45 +1,95 @@
-/.phpunit.cache
+# ============================================================
+# ✅ Laravel & PHP
+# ============================================================
+/vendor
 /node_modules
+/public/storage
 /public/build
 /public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-/public/python/*
+/public/assets/python/.env
 
-# .env
+.env
 .env.backup
 .env.production
+/storage/*.key
+/storage/pail
+/.phpunit.cache
+/.phpunit.result.cache
 .phpactor.json
-.phpunit.result.cache
 
-docker-compose.override.yml
-
-Homestead.json
-Homestead.yaml
+# Laravel test & debug
 npm-debug.log
 yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+docker-compose.override.yml
 
-!/public/assets
-!/public/assets/*
-/resources/assets/vendor/fonts/iconify/*
+# Laravel Homestead
+Homestead.json
+Homestead.yaml
+
+# Laravel public build artifacts
 /public/css
 /public/js
 /public/mix-manifest.json
-# /public/assets/*
-# But not these files...
+
+# ============================================================
+# ✅ Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+*.db
+*.sqlite*
+*.bak
+
+# Python virtual environment
+.venv/
+env/
+ENV/
+venv/
+.env/
+
+# Python config & coverage
+*.cfg
+*.ini
+.cache
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ============================================================
+# ✅ IDEs & Editor Files
+# ============================================================
+/.idea
+/.vscode
+/.nova
+/.fleet
+/.zed
+
+# ============================================================
+# ✅ OS Files
+# ============================================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# ============================================================
+# ✅ Exceptions (Files to Keep in Git)
+# ============================================================
+!/public/assets
+!/public/assets/*
+!/resources/assets/vendor/js/template-customizer.js
+
+# Optional: Keep JSON configurations (uncomment if needed)
 # !/public/assets/json
 # /public/assets/json/*
 # !/public/assets/json/search-vertical.json
 # !/public/assets/json/search-horizontal.json
 
-
-# Except for 'template-customizer.js' inside 'resources/assets/vendor/js/'
-!/resources/assets/vendor/js/template-customizer.js
+# Optional: Exclude specific fonts if needed
+/resources/assets/vendor/fonts/iconify/*

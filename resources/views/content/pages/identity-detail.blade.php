@@ -11,6 +11,10 @@
 @endsection
 
 @section('page-script')
+  <script>
+    window.USER_ROLE = "{{ auth()->user()->role }}";
+    window.CURRENT_USER_ID = "{{ auth()->id() }}"; // untuk seleksi request miliknya sendiri
+  </script>
   @vite(['resources/assets/js/modal-edit-identity.js', 'resources/assets/js/identity-detail.js', 'resources/assets/js/identity-view-table.js'])
 @endsection
 
@@ -33,7 +37,7 @@
         break;
       }
       @endphp
-        <div class="d-flex align-items-center flex-column mt-n4 mb-3">
+        <div class="d-flex align-items-center flex-column mb-3">
           <div class="avatar" style="width: 70px; height: 70px;">
           <span
             class="mt-1 avatar-initial rounded-circle bg-label-primary text-heading d-inline-flex justify-content-center align-items-center"
@@ -45,7 +49,7 @@
         </div>
         </div>
       </div>
-      <h5 class="pb-4 border-bottom mb-4">Details</h5>
+      <h5 class="pb-4 border-bottom mb-4">Informasi Detail</h5>
       <div class="info-container">
         <ul class="list-unstyled mb-6">
         <li class="mb-2">
@@ -87,16 +91,25 @@
         </li>
         </ul>
         <hr class="my-4 border-gray-600" />
-        <div class="d-flex justify-content-center">
-        <a href="javascript:;" class="btn btn-primary me-4 btn-edit-identity" data-bs-target="#editIdentity"
-          data-id="{{ $identity->id }}" data-hostname="{{ $identity->hostname }}"
-          data-ip_addr_srv="{{ $identity->ip_addr_srv }}" data-platform_id="{{ $identity->platform_id }}"
-          data-username="{{ $identity->username }}" data-functionality="{{ $identity->functionality }}"
-          data-description="{{ $identity->description }}" data-bs-toggle="modal">Edit</a>
-        <a href="javascript:;" class="btn btn-danger delete-identity" data-id="{{ $identity->id }}">
-          Hapus
-        </a>
-        </div>
+        @php
+      $isAdmin = auth()->user()->role === 'admin';
+    @endphp
+
+        @if ($isAdmin)
+      <div class="d-flex justify-content-center">
+      <a href="javascript:;" class="btn btn-primary me-4 btn-edit-identity" data-bs-target="#editIdentity"
+        data-id="{{ $identity->id }}" data-hostname="{{ $identity->hostname }}"
+        data-ip_addr_srv="{{ $identity->ip_addr_srv }}" data-platform_id="{{ $identity->platform_id }}"
+        data-username="{{ $identity->username }}" data-functionality="{{ $identity->functionality }}"
+        data-description="{{ $identity->description }}" data-bs-toggle="modal">
+        Edit
+      </a>
+
+      <a href="javascript:;" class="btn btn-danger delete-identity" data-id="{{ $identity->id }}">
+        Hapus
+      </a>
+      </div>
+      @endif
       </div>
       </div>
     </div>
@@ -177,8 +190,8 @@
         <thead>
         <tr>
           <th>No</th>
-          <th>Tipe Aksi</th>
-          <th>Waktu</th>
+          <th>Action Type</th>
+          <th>Time</th>
           <th>User</th>
           <th>IP Address</th>
         </tr>

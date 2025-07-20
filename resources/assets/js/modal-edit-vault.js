@@ -2,17 +2,14 @@
 
 $(function () {
   // Inisialisasi Select2
-  const select2 = $('.select2');
-  if (select2.length) {
-    select2.each(function () {
-      $(this)
-        .wrap('<div class="position-relative"></div>')
-        .select2({
-          placeholder: 'Pilih nilai',
-          dropdownParent: $(this).parent()
-        });
-    });
-  }
+  $('.select2').each(function () {
+    $(this)
+      .wrap('<div class="position-relative"></div>')
+      .select2({
+        placeholder: 'Pilih nilai',
+        dropdownParent: $(this).parent()
+      });
+  });
 
   // 🔁 Fetch data saat tombol edit diklik
   $(document).on('click', '.btn-edit-request', function () {
@@ -58,7 +55,7 @@ $(function () {
     $('#editDurationRange').val('').removeData('start').removeData('end');
   });
 
-  // Submit update
+  // Submit update dengan preConfirm
   $('#editRequestForm').on('submit', function (e) {
     e.preventDefault();
 
@@ -68,58 +65,83 @@ $(function () {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Ya, Simpan',
-      cancelButtonText: 'Batal'
-    }).then(result => {
-      if (result.isConfirmed) {
+      cancelButtonText: 'Batal',
+      focusConfirm: true,
+      returnFocus: false,
+      preConfirm: () => {
         const $btn = $('#btnUpdateRequest');
         $btn.prop('disabled', true).text('Menyimpan...');
 
         const id = $('#editRequestId').val();
+        const start = $('#editDurationRange').data('start');
+        const end = $('#editDurationRange').data('end');
+
         const formData = {
           _method: 'PUT',
           _token: $('meta[name="csrf-token"]').attr('content'),
           purpose: $('#editPurpose').val(),
-          start_time: $('#editDurationRange').data('start'),
-          end_time: $('#editDurationRange').data('end'),
-          duration_minutes: moment($('#editDurationRange').data('end')).diff(
-            moment($('#editDurationRange').data('start')),
-            'minutes'
-          ),
+          start_time: start,
+          end_time: end,
+          duration_minutes: moment(end).diff(moment(start), 'minutes'),
           duration_range: $('#editDurationRange').val()
         };
 
-        $.ajax({
-          url: `/vault/${id}`,
-          method: 'POST',
-          data: formData,
-          success: function (res) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil',
-              text: res.message,
-              timer: 1500,
-              showConfirmButton: false
-            });
-
-            $('#text-purpose').text(formData.purpose);
-            $('#text-duration').text(formData.duration_minutes + ' mins');
-
-            $('#editRequestModal').modal('hide');
-            $('#editRequestForm')[0].reset();
-            $('.datatables-users').DataTable().ajax.reload(null, false);
-          },
-          error: function (err) {
-            Swal.fire({
-              icon: 'error',
-              title: 'Gagal',
-              text: err.responseJSON?.message || 'Terjadi kesalahan saat memperbarui data.'
-            });
-          },
-          complete: function () {
-            $btn.prop('disabled', false).text('Simpan Perubahan');
-          }
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url: `/vault/detail/${id}`,
+            method: 'POST',
+            data: formData,
+            success: function (res) {
+              resolve({ res, formData });
+            },
+            error: function (err) {
+              reject(new Error(err.responseJSON?.message || 'Terjadi kesalahan saat memperbarui data.'));
+            },
+            complete: function () {
+              $btn.prop('disabled', false).text('Simpan Perubahan');
+            }
+          });
         });
       }
-    });
+    })
+      .then(result => {
+        if (!result.isConfirmed || !result.value) return;
+
+        const { res, formData } = result.value;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil',
+          text: res.message,
+          timer: 1500,
+          showConfirmButton: false
+        });
+
+        $('#text-purpose').text(formData.purpose);
+        $('#text-duration').text(formData.duration_minutes + ' mins');
+
+        $('#editRequestModal').modal('hide');
+        $('#editRequestForm')[0].reset();
+        $('.datatables-users').DataTable().ajax.reload(null, false);
+      })
+      .catch(err => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: err.message
+        });
+      });
   });
+});
+
+// ⛔️ Blok Enter submit modal, tapi trigger tombol Swal jika sedang tampil
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && Swal.isVisible()) {
+    const activeElement = document.activeElement;
+    const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement?.tagName);
+    if (!isInput) {
+      e.preventDefault();
+      document.querySelector('.swal2-confirm')?.click();
+    }
+  }
 });

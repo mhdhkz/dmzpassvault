@@ -17,3 +17,46 @@
   2025-07-05 16:04:06 Running ["artisan" rotate:expired] ..................................................... 6s DONE
   ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
 
+
+   INFO  No scheduled commands are ready to run.  
+
+
+  2025-07-05 22:32:05 Running ["artisan" rotate:expired] ..................................................... 1s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+  2025-07-05 22:34:20 Running ["artisan" rotate:expired] ..................................................... 2s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+  2025-07-05 22:36:43 Running ["artisan" rotate:expired] ..................................................... 2s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+  2025-07-05 22:42:36 Running ["artisan" rotate:expired] ............................................................................. 841.73ms DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+  2025-07-05 22:46:47 Running ["artisan" rotate:expired] ................................................................................... 2s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+  2025-07-05 22:48:23 Running ["artisan" rotate:expired] ................................................................................... 4s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+  2025-07-05 22:50:22 Running ["artisan" rotate:expired] ................................................................................... 4s DONE
+  ⇂ "C:\laragon\bin\php\php-8.3.16-Win32-vs16-x64\php.exe" "artisan" rotate:expired > "NUL" 2>&1  
+
+
+   INFO  No scheduled commands are ready to run.  
+
+
+   INFO  No scheduled commands are ready to run.  
+

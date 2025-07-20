@@ -8,6 +8,16 @@
 
 @section('title', 'Lupa Password')
 
+<!-- Vendor Styles -->
+@section('vendor-style')
+  @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+@endsection
+
+<!-- Vendor Scripts -->
+@section('vendor-script')
+  @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+@endsection
+
 @section('page-style')
   @vite(['resources/assets/vendor/scss/pages/page-auth.scss'])
 @endsection
@@ -70,4 +80,27 @@
     <!-- /Forgot Password -->
     </div>
   </div>
+
+  @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('#formAuthentication');
+    form.addEventListener('submit', function (e) {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      Swal.fire({
+      title: 'Mengirim link reset...',
+      html: 'Mohon tunggu sebentar',
+      allowOutsideClick: false,
+      didOpen: () => {
+      Swal.showLoading();
+      }
+      });
+    });
+    });
+    </script>
+  @endpush
+
+
 @endsection

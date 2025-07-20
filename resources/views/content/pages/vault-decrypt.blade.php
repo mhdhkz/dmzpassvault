@@ -11,6 +11,10 @@
 @endsection
 
 @section('page-script')
+  <script>
+    window.USER_ROLE = @json(auth()->user()->role ?? 'user');
+    window.CURRENT_USER_ID = @json(auth()->id());
+  </script>
   @vite('resources/assets/js/vault-decrypt.js')
 @endsection
 

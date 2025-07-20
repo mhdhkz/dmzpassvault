@@ -21,7 +21,10 @@
           "url": "/identity/identity-form",
           "name": "Form Identity",
           "icon": "menu-icon icon-base bx bx-add-to-queue",
-          "slug": "identity-identity-form"
+          "slug": "identity-identity-form",
+          "roles": [
+            "admin"
+          ]
         }
       ]
     },
@@ -46,7 +49,10 @@
           "url": "/vault/vault-encrypt",
           "name": "Enkripsi",
           "icon": "menu-icon icon-base bx bx-lock",
-          "slug": "vault-vault-encrypt"
+          "slug": "vault-vault-encrypt",
+          "roles": [
+            "admin"
+          ]
         },
         {
           "url": "/vault/vault-decrypt",
@@ -57,16 +63,53 @@
       ]
     },
     {
-      "url": "/admin/audit-logs",
-      "name": "Audit Log",
-      "icon": "menu-icon icon-base bx bx-code-block",
-      "slug": "admin-audit-logs"
-    },
-    {
-      "url": "/page-2",
-      "name": "Manajemen Akun",
-      "icon": "menu-icon icon-base bx bx-user",
-      "slug": "account"
+      "name": "Administrasi",
+      "icon": "menu-icon icon-base bx bx-wrench",
+      "slug": "admin",
+      "submenu": [
+        {
+          "url": "/admin/user-list",
+          "name": "List User",
+          "icon": "menu-icon icon-base bx bx-group",
+          "slug": "admin-user-list",
+          "roles": [
+            "admin"
+          ]
+        },
+        {
+          "url": "/admin/user/detail/__CURRENT_USER_ID__",
+          "name": "Profil",
+          "icon": "menu-icon icon-base bx bx-user",
+          "slug": "admin-user-detail"
+        },
+        {
+          "url": "/admin/user-form",
+          "name": "Tambah User",
+          "icon": "menu-icon icon-base bx bx-user-plus",
+          "slug": "admin-user-form",
+          "roles": [
+            "admin"
+          ]
+        },
+        {
+          "url": "/admin/role-form",
+          "name": "Form Role",
+          "icon": "menu-icon icon-base bx bx-purchase-tag",
+          "slug": "admin-role-form",
+          "roles": [
+            "admin"
+          ]
+        },
+        {
+          "url": "/admin/audit-logs",
+          "name": "Audit Log",
+          "icon": "menu-icon icon-base bx bx-code-block",
+          "slug": "admin-audit-logs",
+          "roles": [
+            "admin"
+          ]
+        }
+      ]
     },
     {
       "url": "javascript:void(0);",

@@ -40,6 +40,7 @@
       <label class="form-label" for="preview-request-id">Request ID</label>
       <div id="request-id-preview" class="form-control bg-light">
         <span class="text-muted">Memuat...</span>
+        <input type="hidden" name="request_id_preview" id="request_id" />
       </div>
       </div>
 

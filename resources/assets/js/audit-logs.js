@@ -151,9 +151,20 @@ document.addEventListener('DOMContentLoaded', function (e) {
           targets: 6,
           render: function (data, type, full, meta) {
             var event_time = full['event_time'];
-            // Format ulang: ubah T jadi spasi, ambil hanya sampai menit
             if (event_time) {
-              return '<span class="text-heading">' + event_time.replace('T', ' ').slice(0, 16) + '</span>';
+              try {
+                const dateLocal = new Date(event_time); // Langsung parse
+                const yyyy = dateLocal.getFullYear();
+                const mm = String(dateLocal.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateLocal.getDate()).padStart(2, '0');
+                const hh = String(dateLocal.getHours()).padStart(2, '0');
+                const min = String(dateLocal.getMinutes()).padStart(2, '0');
+
+                return `<span class="text-heading">${yyyy}-${mm}-${dd} ${hh}:${min}</span>`;
+              } catch (e) {
+                console.error('Invalid date format:', event_time, e);
+                return `<span class="text-heading">${event_time}</span>`;
+              }
             } else {
               return '-';
             }

@@ -11,22 +11,26 @@
 @endsection
 
 @section('page-script')
-  @vite('resources/assets/js/identity-list.js')
+  <script>
+    window.USER_ROLE = "{{ auth()->user()->role }}";
+    window.USER_ID = "{{ auth()->id() }}";
+  </script>
+  @vite(['resources/assets/js/identity-list.js', 'resources/assets/js/modal-edit-identity.js'])
 @endsection
 
 @section('content')
-  <div class="row g-6 mb-6">
-    <div class="col-sm-6 col-xl-3">
+  <div class="row g-4 mb-4">
+    <!-- Total Identity -->
+    <div class="col-sm-6 col-xl-4">
     <div class="card">
       <div class="card-body">
       <div class="d-flex align-items-start justify-content-between">
         <div class="content-left">
-        <span class="text-heading">Session</span>
+        <span class="text-heading">Total Identity</span>
         <div class="d-flex align-items-center my-1">
-          <h4 class="mb-0 me-2">21,459</h4>
-          <p class="text-success mb-0">(+29%)</p>
+          <h4 class="mb-0 me-2" id="stat-total-identity">0</h4>
         </div>
-        <small class="mb-0">Total Users</small>
+        <small class="mb-0">Jumlah Semua Server</small>
         </div>
         <div class="avatar">
         <span class="avatar-initial rounded bg-label-primary">
@@ -37,63 +41,44 @@
       </div>
     </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+
+    <!-- Total Linux -->
+    <div class="col-sm-6 col-xl-4">
     <div class="card">
       <div class="card-body">
       <div class="d-flex align-items-start justify-content-between">
         <div class="content-left">
-        <span class="text-heading">Paid Users</span>
+        <span class="text-heading">Total Linux</span>
         <div class="d-flex align-items-center my-1">
-          <h4 class="mb-0 me-2">4,567</h4>
-          <p class="text-success mb-0">(+18%)</p>
+          <h4 class="mb-0 me-2" id="stat-linux">0</h4>
         </div>
-        <small class="mb-0">Last week analytics </small>
-        </div>
-        <div class="avatar">
-        <span class="avatar-initial rounded bg-label-danger">
-          <i class="icon-base bx bx-user-plus icon-lg"></i>
-        </span>
-        </div>
-      </div>
-      </div>
-    </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-    <div class="card">
-      <div class="card-body">
-      <div class="d-flex align-items-start justify-content-between">
-        <div class="content-left">
-        <span class="text-heading">Active Users</span>
-        <div class="d-flex align-items-center my-1">
-          <h4 class="mb-0 me-2">19,860</h4>
-          <p class="text-danger mb-0">(-14%)</p>
-        </div>
-        <small class="mb-0">Last week analytics</small>
+        <small class="mb-0">Server Linux</small>
         </div>
         <div class="avatar">
         <span class="avatar-initial rounded bg-label-success">
-          <i class="icon-base bx bx-user-check icon-lg"></i>
+          <i class="icon-base bx bx-terminal icon-lg"></i>
         </span>
         </div>
       </div>
       </div>
     </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+
+    <!-- Total Database -->
+    <div class="col-sm-6 col-xl-4">
     <div class="card">
       <div class="card-body">
       <div class="d-flex align-items-start justify-content-between">
         <div class="content-left">
-        <span class="text-heading">Pending Users</span>
+        <span class="text-heading">Total Database</span>
         <div class="d-flex align-items-center my-1">
-          <h4 class="mb-0 me-2">237</h4>
-          <p class="text-success mb-0">(+42%)</p>
+          <h4 class="mb-0 me-2" id="stat-db">0</h4>
         </div>
-        <small class="mb-0">Last week analytics</small>
+        <small class="mb-0">Server Database</small>
         </div>
         <div class="avatar">
-        <span class="avatar-initial rounded bg-label-warning">
-          <i class="icon-base bx bx-user-voice icon-lg"></i>
+        <span class="avatar-initial rounded bg-label-info">
+          <i class="icon-base bx bx-data icon-lg"></i>
         </span>
         </div>
       </div>

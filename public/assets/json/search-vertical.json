@@ -1,36 +1,68 @@
 {
-  "suggestions": {
-    "IDENTITY": [
-      {
-        "name": "Identity List",
-        "icon": "bx-list-ul",
-        "url": "identity/identity-list"
-      },
-      {
-        "name": "Identity Form",
-        "icon": "bx-add-to-queue",
-        "url": "identity/identity-form"
-      }
-    ],
-    "VAULT": [
-      {
-        "name": "Decrypt Password",
-        "icon": "bx-lock-open-alt",
-        "url": "vault/decrypt"
-      }
-    ],
-    "MANAJEMEN USER": [
-      {
-        "name": "User Profile",
-        "icon": "bx-user-circle",
-        "url": "pages/profile-user"
-      }
-    ],
-    "LAINNYA": [
+  "navigation": {
+    "Main Menu": [
       {
         "name": "Dashboard",
         "icon": "bx-grid-alt",
         "url": "dashboard"
+      }
+    ],
+    "Identity": [
+      {
+        "name": "List Identity",
+        "icon": "bx-list-ul",
+        "url": "identity/identity-list"
+      },
+      {
+        "name": "Form Identity",
+        "icon": "bx-add-to-queue",
+        "url": "identity/identity-form"
+      }
+    ],
+    "Vault": [
+      {
+        "name": "Permohonan Vault",
+        "icon": "bx-food-menu",
+        "url": "vault/vault-form"
+      },
+      {
+        "name": "List Permohonan",
+        "icon": "bx-detail",
+        "url": "vault/vault-list"
+      },
+      {
+        "name": "Enkripsi",
+        "icon": "bx-lock",
+        "url": "vault/vault-encrypt"
+      },
+      {
+        "name": "Dekripsi",
+        "icon": "bx-lock-open-alt",
+        "url": "vault/vault-decrypt"
+      }
+    ],
+    "Administrasi": [
+      {
+        "name": "List User",
+        "icon": "bx-group",
+        "url": "admin/user-list"
+      },
+      {
+        "name": "Tambah User",
+        "icon": "bx-user-plus",
+        "url": "admin/user-form"
+      },
+      {
+        "name": "Audit Log",
+        "icon": "bx-code-block",
+        "url": "admin/audit-logs"
+      }
+    ],
+    "Aksi": [
+      {
+        "name": "Logout",
+        "icon": "bx-exit",
+        "url": "javascript:void(0);"
       }
     ]
   }

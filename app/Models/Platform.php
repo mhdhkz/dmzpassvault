@@ -11,4 +11,10 @@ class Platform extends Model
   public $incrementing = false;
 
   protected $fillable = ['id', 'name', 'description'];
+
+  public function positions()
+  {
+    return $this->belongsToMany(Position::class, 'platform_position_access', 'platform_id', 'position_id');
+  }
+
 }

@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\Platform;
+use App\Models\Position;
 
 class PlatformAndIdentitySeeder extends Seeder
 {
@@ -40,5 +42,22 @@ class PlatformAndIdentitySeeder extends Seeder
         'updated_at' => now(),
       ]
     ]);
+
+    // 3. Ambil data platform
+    $linuxPlatform = Platform::where('name', 'Linux')->first();
+    $dbPlatform = Platform::where('name', 'Database')->first();
+
+    // 4. Ambil data posisi
+    $dba = Position::where('name', 'Database Administrator')->first();
+    $sysadmin = Position::where('name', 'System Administrator')->first();
+
+    // 5. Mapping role ↔ platform (jika ada)
+    if ($dba && $dbPlatform) {
+      $dba->platforms()->syncWithoutDetaching([$dbPlatform->id]);
+    }
+
+    if ($sysadmin && $linuxPlatform && $dbPlatform) {
+      $sysadmin->platforms()->syncWithoutDetaching([$linuxPlatform->id]);
+    }
   }
 }

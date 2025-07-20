@@ -30,6 +30,10 @@
 @endsection
 
 @section('page-script')
+  <script>
+    window.USER_ROLE = "{{ auth()->user()->role }}";
+    window.CURRENT_USER_ID = "{{ auth()->id() }}"; // untuk seleksi request miliknya sendiri
+  </script>
   @vite(['resources/assets/js/vault-list.js', 'resources/assets/js/modal-edit-vault.js'])
 @endsection
 
@@ -78,10 +82,10 @@
         <th class="control dt-orderable-none dtr-hidden" aria-label=""></th>
         <th data-dt-column="1" class="dt-orderable-none" aria-label="Checkbox: Not sortable"></th>
         <th data-dt-column="2" class="dt-orderable-none">No</th>
-        <th data-dt-column="3"><span class="dt-column-title">ID Pengajuan</span></th>
-        <th data-dt-column="4"><span class="dt-column-title">User Pemohon</span></th>
-        <th data-dt-column="5"><span class="dt-column-title">Waktu Request</span></th>
-        <th data-dt-column="6"><span class="dt-column-title">Durasi</span></th>
+        <th data-dt-column="3"><span class="dt-column-title">Request ID</span></th>
+        <th data-dt-column="4"><span class="dt-column-title">User</span></th>
+        <th data-dt-column="5"><span class="dt-column-title">Request Time</span></th>
+        <th data-dt-column="6"><span class="dt-column-title">Duration</span></th>
         <th data-dt-column="7"><span class="dt-column-title">Status</span></th>
         <th data-dt-column="8" class="dt-orderable-none text-center"><span
           class="dt-column-title text-center">Actions</span></th>

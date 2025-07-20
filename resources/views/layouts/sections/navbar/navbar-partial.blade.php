@@ -95,29 +95,30 @@
       <!-- User -->
       <li class="nav-item navbar-dropdown dropdown-user dropdown">
         <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
-          <div class="avatar avatar-online">
-            @php
-        $user = Auth::user();
-        $name = $user?->name ?? 'Guest User';
-        $initials = collect(explode(' ', $name))->map(fn($n) => strtoupper($n[0]))->join('');
+          @php
+      $user = Auth::user();
+      $name = $user?->name ?? 'Guest User';
+      $nameParts = explode(' ', trim($name));
+      $first = strtoupper(substr($nameParts[0] ?? '', 0, 1));
+      $last = strtoupper(substr(end($nameParts) ?? '', 0, 1));
+      $initials = $first . $last;
+      $role = $user?->role ?? 'guest';
       @endphp
-
+          <div class="avatar avatar-online">
             @if ($user && $user->profile_photo_path)
         <img src="{{ $user->profile_photo_url }}" alt="{{ $name }}" class="w-px-40 h-auto rounded-circle" />
       @else
         <span
           class="avatar-initial rounded-circle bg-label-primary d-flex align-items-center justify-content-center text-uppercase fw-semibold"
           style="width: 40px; height: 40px;">
-          {{ Str::limit($initials, 2, '') }}
+          {{ $initials }}
         </span>
       @endif
-
           </div>
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
-            <a class="dropdown-item"
-              href="{{ Route::has('profile.show') ? route('profile.show') : 'javascript:void(0);' }}">
+            <a class="dropdown-item" href="{{ route('admin-user-detail', Auth::id()) }}">
               <div class="d-flex">
                 <div class="flex-shrink-0 me-3">
                   <div class="avatar avatar-online">
@@ -140,12 +141,8 @@
                   </div>
                 </div>
                 <div class="flex-grow-1">
-                  <h6 class="mb-0">
-                    @if (Auth::check())
-            {{ Auth::user()->name }}
-          @else
-            Test
-          @endif
+                  <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                  <small class="text-muted text-capitalize">{{ $role }}</small>
                   </h6>
                 </div>
               </div>

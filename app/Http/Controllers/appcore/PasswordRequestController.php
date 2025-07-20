@@ -25,9 +25,11 @@ class PasswordRequestController extends Controller
 
   public function getListData(Request $request)
   {
-    $query = PasswordRequest::with(['user:id,name', 'identities:id'])->select(['id', 'request_id', 'user_id', 'start_at', 'end_at', 'created_at', 'status'])->latest();
+    $query = PasswordRequest::with(['user:id,name', 'identities:id'])
+      ->select(['id', 'request_id', 'user_id', 'start_at', 'end_at', 'created_at', 'status'])
+      ->latest();
 
-
+    // Filtering tambahan
     if ($request->filled('status')) {
       $query->where('status', $request->status);
     }
@@ -46,49 +48,52 @@ class PasswordRequestController extends Controller
       ]);
     }
 
+    // User biasa hanya boleh melihat permohonan miliknya sendiri
+    if (auth()->user()->role !== 'admin') {
+      $query->where('user_id', auth()->id());
+    }
+
     return DataTables::of($query)
       ->addIndexColumn()
-
       ->addColumn('request_id', fn($row) => $row->request_id)
       ->addColumn('user.name', fn($row) => optional($row->user)->name ?? '-')
       ->addColumn('created_at', fn($row) => optional($row->created_at)->format('Y-m-d H:i'))
-
       ->addColumn('duration', function ($row) {
         if (!$row->start_at || !$row->end_at)
           return '-';
-
         $diff = $row->start_at->diff($row->end_at);
         return ($diff->d ? "{$diff->d} Days " : '') . ($diff->h ? "{$diff->h} Hrs" : '0 Hrs');
       })
-
       ->addColumn('status', fn($row) => ucfirst($row->status))
-
       ->addColumn('id', fn($row) => $row->id)
+      ->addColumn('user_id', fn($row) => $row->user_id)
 
       // Filter kolom
-      ->filterColumn(
-        'request_id',
-        fn($query, $keyword) =>
-        $query->where('request_id', 'like', "%$keyword%")
-      )
-      ->filterColumn(
-        'user.name',
-        fn($query, $keyword) =>
-        $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$keyword%"))
-      )
-      ->filterColumn(
-        'status',
-        fn($query, $keyword) =>
-        $query->where('status', 'like', "%$keyword%")
-      )
+      ->filterColumn('request_id', fn($query, $keyword) =>
+        $query->where('request_id', 'like', "%$keyword%"))
+      ->filterColumn('user.name', fn($query, $keyword) =>
+        $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$keyword%")))
+      ->filterColumn('status', fn($query, $keyword) =>
+        $query->where('status', 'like', "%$keyword%"))
 
       ->make(true);
   }
 
-
   public function create()
   {
-    $identities = Identity::all();
+    $user = auth()->user();
+
+    if ($user->role === 'admin') {
+      $identities = Identity::all();
+    } else {
+      // Ambil platform yang diizinkan dari tabel pivot platform_position_access
+      $allowedPlatformIds = DB::table('platform_position_access')
+        ->where('position_id', $user->position_id)
+        ->pluck('platform_id');
+
+      $identities = Identity::whereIn('platform_id', $allowedPlatformIds)->get();
+    }
+
     return view('content.pages.vault-form', compact('identities'));
   }
 
@@ -165,12 +170,14 @@ class PasswordRequestController extends Controller
   {
     $request = PasswordRequest::with(['user', 'identities.platform', 'approvedBy', 'revealedBy'])->findOrFail($id);
 
-    // Tambahkan durasi (agar tersedia di blade)
-    $diff = $request->start_at->diff($request->end_at);
+    // ✅ Proteksi akses
+    if (auth()->id() !== $request->user_id && auth()->user()->role !== 'admin') {
+      abort(403, 'Akses tidak diizinkan.');
+    }
 
+    $diff = $request->start_at->diff($request->end_at);
     $request->duration_friendly = ($diff->d ? "{$diff->d} Days " : '0 Days ') .
       ($diff->h ? "{$diff->h} Hours" : '0 Hours');
-
 
     $identity = $request->identities->first();
 
@@ -195,6 +202,9 @@ class PasswordRequestController extends Controller
   public function approve($id)
   {
     $request = PasswordRequest::findOrFail($id);
+    if (auth()->user()->role !== 'admin') {
+      return response()->json(['message' => 'Tidak diizinkan'], 403);
+    }
     $request->update([
       'status' => 'approved',
       'approved_at' => now(),
@@ -316,9 +326,14 @@ class PasswordRequestController extends Controller
       ], 422);
     }
 
-    $durationMinutes = $startAt->diffInMinutes($endAt);
-
     $vault = PasswordRequest::findOrFail($id);
+
+    // ✅ Tambahkan otorisasi
+    if (auth()->id() !== $vault->user_id && auth()->user()->role !== 'admin') {
+      return response()->json(['message' => 'Akses tidak diizinkan'], 403);
+    }
+
+    $durationMinutes = $startAt->diffInMinutes($endAt);
 
     $vault->update([
       'purpose' => trim($request->purpose),
@@ -338,14 +353,19 @@ class PasswordRequestController extends Controller
   public function destroy($id)
   {
     $request = PasswordRequest::findOrFail($id);
+    $user = auth()->user();
 
-    // Hapus relasi terlebih dahulu
+    // Cek apakah user pemilik atau admin
+    if ($request->user_id !== $user->id && !$user->hasRole('admin')) {
+      return response()->json(['message' => 'Forbidden'], 403);
+    }
+
     $request->identities()->detach();
-
     $request->delete();
 
     return response()->json(['success' => true, 'message' => 'Request berhasil dihapus.']);
   }
+
 
   public function getNextRequestId()
   {
@@ -572,6 +592,19 @@ class PasswordRequestController extends Controller
       try {
         $identity = Identity::findOrFail($id);
 
+        // Validasi: hanya lanjutkan kalau user punya request aktif dan approved
+        $validRequest = PasswordRequest::where('user_id', auth()->id())
+          ->where('status', 'approved')
+          ->whereHas('identities', fn($q) => $q->where('identities.id', $identity->id))
+          ->where('start_at', '<=', now())
+          ->where('end_at', '>=', now())
+          ->latest()
+          ->first();
+
+        if (!$validRequest) {
+          throw new \Exception('Akses tidak diizinkan atau request sudah expired.');
+        }
+
         // Jalankan Python script decrypt
         $scriptPath = public_path('assets/python/decrypt_password.py');
 
@@ -585,7 +618,7 @@ class PasswordRequestController extends Controller
           env('PYTHON_PATH', 'python'),
           $scriptPath,
           '--identity=' . $identity->id
-        ], base_path(), $env); // <- disamakan dengan encrypt
+        ], base_path(), $env);
 
         $process->run();
 
@@ -593,12 +626,11 @@ class PasswordRequestController extends Controller
           throw new \Exception($process->getErrorOutput());
         }
 
-        //logger('Raw output from Python:', [$process->getOutput()]);
         $output = trim($process->getOutput());
         $data = json_decode($output, true);
 
         if (!isset($data['decrypted'])) {
-          throw new \Exception('Akses vault belum disetujui atau sudah expired.');
+          throw new \Exception('Gagal mendekripsi password.');
         }
 
         $password = $data['decrypted'];
@@ -613,18 +645,11 @@ class PasswordRequestController extends Controller
           'note' => 'Password berhasil diakses (dekripsi) melalui batch',
         ]);
 
-        $identity->requests()
-          ->whereNull('revealed_at')
-          ->where('status', 'approved')
-          ->get()
-          ->each(function ($request) {
-            $request->update([
-              'revealed_by' => auth()->id(),
-              'revealed_at' => now(),
-              'reveal_ip' => request()->ip()
-            ]);
-          });
-
+        $validRequest->update([
+          'revealed_by' => auth()->id(),
+          'revealed_at' => now(),
+          'reveal_ip' => request()->ip()
+        ]);
 
         $results[] = [
           'identity_id' => $identity->id,
@@ -640,6 +665,7 @@ class PasswordRequestController extends Controller
       }
     }
 
+
     return response()->json([
       'status' => 'ok',
       'data' => $results
@@ -650,12 +676,16 @@ class PasswordRequestController extends Controller
     $ids = $request->input('ids', []);
 
     try {
-      PasswordRequest::whereIn('id', $ids)->delete();
+      PasswordRequest::whereIn('id', $ids)->get()->each(function ($req) {
+        $req->identities()->detach();
+        $req->delete();
+      });
 
       return response()->json(['success' => true]);
     } catch (\Exception $e) {
       return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
   }
+
 
 }

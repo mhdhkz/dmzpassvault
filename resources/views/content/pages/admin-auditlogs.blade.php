@@ -35,7 +35,7 @@
 
   <div class="card">
     <div class="card-header border-bottom custom-header-bg">
-    <h3 class="card-title mb-0 text-center text-white">Audit Logs</h3>
+    <h3 class="card-title mb-0 text-center text-white">Audit Log</h3>
     </div>
 
     <!-- Collapsible Filter -->

@@ -7,6 +7,7 @@
 let dtVault;
 
 document.addEventListener('DOMContentLoaded', function () {
+  const role = window.USER_ROLE || 'user';
   const dtTable = document.querySelector('.datatables-users');
 
   const showToast = (type, msg) => {
@@ -151,22 +152,38 @@ document.addEventListener('DOMContentLoaded', function () {
           targets: -1,
           orderable: false,
           searchable: false,
-          render: (data, type, row) => `
-              <div class="d-flex gap-2">
-                <a class="btn btn-sm btn-info btn-view text-white" title="Lihat Detail" href="/vault/${row.id}">
-                  <i class="icon-base bx bx-show"></i>
-                </a>
-                <button class="btn btn-sm btn-warning btn-edit-request text-white"
-                        title="Edit Pengajuan"
-                        data-id="${row.id}"
-                        data-request_id="${row.request_id}"
-                        data-purpose="${row.purpose}"
-                        data-start_time="${row.start_time}"
-                        data-end_time="${row.end_time}"
-                        data-bs-toggle="modal"
-                        data-bs-target="#editRequestModal">
-                  <i class="icon-base bx bx-edit-alt"></i>
-                </button>
+          render: (data, type, row) => {
+            const role = window.USER_ROLE || 'user';
+            const currentUserId = window.CURRENT_USER_ID || null;
+            let buttons = '';
+
+            // Tombol Lihat (selalu muncul)
+            buttons += `
+              <a class="btn btn-sm btn-info btn-view text-white" title="Lihat Detail" href="/vault/detail/${row.id}">
+                <i class="icon-base bx bx-show"></i>
+              </a>
+            `;
+
+            // Jika user adalah pemilik request
+            if (parseInt(row.user_id) === parseInt(currentUserId) || role === 'admin') {
+              buttons += `
+                  <button class="btn btn-sm btn-warning btn-edit-request text-white"
+                          title="Edit Permohonan"
+                          data-id="${row.id}"
+                          data-request_id="${row.request_id}"
+                          data-purpose="${row.purpose}"
+                          data-start_time="${row.start_time}"
+                          data-end_time="${row.end_time}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#editRequestModal">
+                    <i class="icon-base bx bx-edit-alt"></i>
+                  </button>
+                `;
+            }
+
+            // Jika role admin, tampilkan semua tombol
+            if (role === 'admin') {
+              buttons += `
                 <button class="btn btn-sm btn-success btn-approve text-white" title="Approve" data-id="${row.id}">
                   <i class="icon-base bx bx-check"></i>
                 </button>
@@ -176,8 +193,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="btn btn-sm btn-secondary btn-delete-request text-white" title="Hapus" data-id="${row.id}">
                   <i class="icon-base bx bx-trash"></i>
                 </button>
-              </div>
-            `
+              `;
+            }
+
+            return `<div class="d-flex gap-2">${buttons}</div>`;
+          }
         }
       ],
       layout: {
@@ -197,199 +217,202 @@ document.addEventListener('DOMContentLoaded', function () {
           features: [
             {
               search: {
-                placeholder: 'Cari Pengajuan',
+                placeholder: 'Cari Permohonan',
                 text: '_INPUT_'
               }
             },
             {
-              buttons: [
-                {
-                  extend: 'collection',
-                  className: 'btn btn-primary dropdown-toggle',
-                  text: `
+              buttons:
+                role === 'admin'
+                  ? [
+                      {
+                        extend: 'collection',
+                        className: 'btn btn-primary dropdown-toggle',
+                        text: `
                     <span class="d-flex align-items-center gap-2">
                       <i class="icon-base bx bx-task"></i>
                       <span class="d-none d-sm-inline-block">Tindakan Batch</span>
                     </span>
                   `,
-                  buttons: [
-                    {
-                      text: `
+                        buttons: [
+                          {
+                            text: `
                         <span class="d-flex align-items-center">
                           <i class="bx bx-check-circle me-2"></i>Approve Terpilih
                         </span>
                       `,
-                      className: 'dropdown-item',
-                      action: function () {
-                        const selectedData = dtVault.rows({ selected: true }).data().toArray();
-                        if (!selectedData.length) {
-                          Swal.fire({
-                            icon: 'warning',
-                            title: 'Tidak ada data terpilih',
-                            text: 'Silakan pilih data untuk disetujui',
-                            confirmButtonText: 'OK',
-                            customClass: {
-                              confirmButton: 'btn btn-primary'
-                            },
-                            buttonsStyling: false
-                          });
-                          return;
-                        }
+                            className: 'dropdown-item',
+                            action: function () {
+                              const selectedData = dtVault.rows({ selected: true }).data().toArray();
+                              if (!selectedData.length) {
+                                Swal.fire({
+                                  icon: 'warning',
+                                  title: 'Tidak ada data terpilih',
+                                  text: 'Silakan pilih data untuk disetujui',
+                                  confirmButtonText: 'OK',
+                                  customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                  },
+                                  buttonsStyling: false
+                                });
+                                return;
+                              }
 
-                        const selectedIds = selectedData.map(row => row.id);
-                        Swal.fire({
-                          title: 'Setujui Permintaan Terpilih?',
-                          icon: 'question',
-                          showCancelButton: true,
-                          confirmButtonText: 'Setujui',
-                          cancelButtonText: 'Batal',
-                          customClass: {
-                            confirmButton: 'btn btn-success',
-                            cancelButton: 'btn btn-label-secondary'
-                          },
-                          buttonsStyling: false
-                        }).then(result => {
-                          if (result.isConfirmed) {
-                            fetch(`/vault/approve/multiple`, {
-                              method: 'POST',
-                              headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Content-Type': 'application/json'
-                              },
-                              body: JSON.stringify({ ids: selectedIds })
-                            })
-                              .then(res => res.json())
-                              .then(res => {
-                                if (res.success) {
-                                  showToast('success', 'Permintaan disetujui');
-                                  dtVault.ajax.reload();
-                                } else {
-                                  showToast('error', res.message || 'Gagal menyetujui');
+                              const selectedIds = selectedData.map(row => row.id);
+                              Swal.fire({
+                                title: 'Setujui Permintaan Terpilih?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'Setujui',
+                                cancelButtonText: 'Batal',
+                                customClass: {
+                                  confirmButton: 'btn btn-success',
+                                  cancelButton: 'btn btn-label-secondary'
+                                },
+                                buttonsStyling: false
+                              }).then(result => {
+                                if (result.isConfirmed) {
+                                  fetch(`/vault/approve/multiple`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ ids: selectedIds })
+                                  })
+                                    .then(res => res.json())
+                                    .then(res => {
+                                      if (res.success) {
+                                        showToast('success', 'Permintaan disetujui');
+                                        dtVault.ajax.reload();
+                                      } else {
+                                        showToast('error', res.message || 'Gagal menyetujui');
+                                      }
+                                    });
                                 }
                               });
-                          }
-                        });
-                      }
-                    },
-                    {
-                      text: `
+                            }
+                          },
+                          {
+                            text: `
                         <span class="d-flex align-items-center">
                           <i class="bx bx-x-circle me-2"></i>Reject Terpilih
                         </span>
                       `,
-                      className: 'dropdown-item',
-                      action: function () {
-                        const selectedData = dtVault.rows({ selected: true }).data().toArray();
-                        if (!selectedData.length) {
-                          Swal.fire({
-                            icon: 'warning',
-                            title: 'Tidak ada data terpilih',
-                            text: 'Silakan pilih data untuk disetujui',
-                            confirmButtonText: 'OK',
-                            customClass: {
-                              confirmButton: 'btn btn-primary'
-                            },
-                            buttonsStyling: false
-                          });
-                          return;
-                        }
+                            className: 'dropdown-item',
+                            action: function () {
+                              const selectedData = dtVault.rows({ selected: true }).data().toArray();
+                              if (!selectedData.length) {
+                                Swal.fire({
+                                  icon: 'warning',
+                                  title: 'Tidak ada data terpilih',
+                                  text: 'Silakan pilih data untuk disetujui',
+                                  confirmButtonText: 'OK',
+                                  customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                  },
+                                  buttonsStyling: false
+                                });
+                                return;
+                              }
 
-                        const selectedIds = selectedData.map(row => row.id);
-                        Swal.fire({
-                          title: 'Tolak Permintaan Terpilih?',
-                          icon: 'warning',
-                          showCancelButton: true,
-                          confirmButtonText: 'Tolak',
-                          cancelButtonText: 'Batal',
-                          customClass: {
-                            confirmButton: 'btn btn-danger',
-                            cancelButton: 'btn btn-label-secondary'
-                          },
-                          buttonsStyling: false
-                        }).then(result => {
-                          if (result.isConfirmed) {
-                            fetch(`/vault/reject/multiple`, {
-                              method: 'POST',
-                              headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Content-Type': 'application/json'
-                              },
-                              body: JSON.stringify({ ids: selectedIds })
-                            })
-                              .then(res => res.json())
-                              .then(res => {
-                                if (res.success) {
-                                  showToast('success', 'Permintaan ditolak');
-                                  dtVault.ajax.reload();
-                                } else {
-                                  showToast('error', res.message || 'Gagal menolak');
+                              const selectedIds = selectedData.map(row => row.id);
+                              Swal.fire({
+                                title: 'Tolak Permintaan Terpilih?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Tolak',
+                                cancelButtonText: 'Batal',
+                                customClass: {
+                                  confirmButton: 'btn btn-danger',
+                                  cancelButton: 'btn btn-label-secondary'
+                                },
+                                buttonsStyling: false
+                              }).then(result => {
+                                if (result.isConfirmed) {
+                                  fetch(`/vault/reject/multiple`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ ids: selectedIds })
+                                  })
+                                    .then(res => res.json())
+                                    .then(res => {
+                                      if (res.success) {
+                                        showToast('success', 'Permintaan ditolak');
+                                        dtVault.ajax.reload();
+                                      } else {
+                                        showToast('error', res.message || 'Gagal menolak');
+                                      }
+                                    });
                                 }
                               });
-                          }
-                        });
-                      }
-                    },
-                    {
-                      text: `
+                            }
+                          },
+                          {
+                            text: `
                         <span class="d-flex align-items-center">
                           <i class="bx bx-trash me-2"></i>Hapus Terpilih
                         </span>
                       `,
-                      className: 'dropdown-item',
-                      action: function () {
-                        const selectedData = dtVault.rows({ selected: true }).data().toArray();
-                        if (!selectedData.length) {
-                          Swal.fire({
-                            icon: 'warning',
-                            title: 'Tidak ada data terpilih',
-                            text: 'Silakan pilih data untuk dihapus',
-                            confirmButtonText: 'OK',
-                            customClass: {
-                              confirmButton: 'btn btn-primary'
-                            },
-                            buttonsStyling: false
-                          });
-                          return;
-                        }
+                            className: 'dropdown-item',
+                            action: function () {
+                              const selectedData = dtVault.rows({ selected: true }).data().toArray();
+                              if (!selectedData.length) {
+                                Swal.fire({
+                                  icon: 'warning',
+                                  title: 'Tidak ada data terpilih',
+                                  text: 'Silakan pilih data untuk dihapus',
+                                  confirmButtonText: 'OK',
+                                  customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                  },
+                                  buttonsStyling: false
+                                });
+                                return;
+                              }
 
-                        const selectedIds = selectedData.map(row => row.id);
-                        Swal.fire({
-                          title: 'Hapus Permintaan Terpilih?',
-                          icon: 'warning',
-                          showCancelButton: true,
-                          confirmButtonText: 'Hapus',
-                          cancelButtonText: 'Batal',
-                          customClass: {
-                            confirmButton: 'btn btn-danger',
-                            cancelButton: 'btn btn-label-secondary'
-                          },
-                          buttonsStyling: false
-                        }).then(result => {
-                          if (result.isConfirmed) {
-                            fetch(`/vault/delete/multiple`, {
-                              method: 'POST',
-                              headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Content-Type': 'application/json'
-                              },
-                              body: JSON.stringify({ ids: selectedIds })
-                            })
-                              .then(res => res.json())
-                              .then(res => {
-                                if (res.success) {
-                                  showToast('success', 'Permintaan dihapus');
-                                  dtVault.ajax.reload();
-                                } else {
-                                  showToast('error', res.message || 'Gagal menghapus');
+                              const selectedIds = selectedData.map(row => row.id);
+                              Swal.fire({
+                                title: 'Hapus Permintaan Terpilih?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Hapus',
+                                cancelButtonText: 'Batal',
+                                customClass: {
+                                  confirmButton: 'btn btn-danger',
+                                  cancelButton: 'btn btn-label-secondary'
+                                },
+                                buttonsStyling: false
+                              }).then(result => {
+                                if (result.isConfirmed) {
+                                  fetch(`/vault/delete/multiple`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ ids: selectedIds })
+                                  })
+                                    .then(res => res.json())
+                                    .then(res => {
+                                      if (res.success) {
+                                        showToast('success', 'Permintaan dihapus');
+                                        dtVault.ajax.reload();
+                                      } else {
+                                        showToast('error', res.message || 'Gagal menghapus');
+                                      }
+                                    });
                                 }
                               });
+                            }
                           }
-                        });
+                        ]
                       }
-                    }
-                  ]
-                }
-              ]
+                    ]
+                  : []
             }
           ]
         },

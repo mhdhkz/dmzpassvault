@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Position;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,14 @@ class User extends Authenticatable
     'name',
     'email',
     'password',
+    'role',
+    'birth_date',
+    'nationality',
+    'employee_id',
+    'job_title',
+    'position_id',
+    'work_mode',
+    'work_location',
   ];
 
   /**
@@ -43,7 +52,20 @@ class User extends Authenticatable
   {
     return [
       'email_verified_at' => 'datetime',
+      'birth_date' => 'date',
       'password' => 'hashed',
     ];
   }
+
+  public function position()
+  {
+    return $this->belongsTo(Position::class);
+  }
+
+  public function allowedPlatformIds(): array
+  {
+    return $this->position?->platforms->pluck('id')->toArray() ?? [];
+  }
+
+
 }

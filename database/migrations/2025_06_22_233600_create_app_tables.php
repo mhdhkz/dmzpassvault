@@ -54,14 +54,24 @@ return new class extends Migration {
 
     Schema::create('password_jobs', function (Blueprint $table) {
       $table->id();
-      $table->string('job_type', 50)->default('rotate_all'); // contoh: rotate_all, rotate_selected
+      $table->string('identity_id', 10)->nullable(); // bisa nullable untuk job rotate_all
+      $table->string('job_type', 50)->default('rotate_all'); // contoh: rotate_all, rotate_selected, rotate_manual
       $table->enum('status', ['pending', 'running', 'done', 'failed'])->default('pending');
+      $table->string('message', 255)->nullable();
+      $table->enum('triggered_by', ['user', 'system'])->default('system');
+      $table->string('actor_ip_addr', 45)->nullable();
       $table->dateTime('started_at')->nullable();
       $table->dateTime('finished_at')->nullable();
       $table->unsignedInteger('total_success')->default(0);
       $table->unsignedInteger('total_failed')->default(0);
       $table->timestamps();
+
+      $table->foreign('identity_id')->references('id')->on('identities')->onDelete('set null');
+      $table->index('identity_id');
+      $table->index('job_type');
+      $table->index('status');
     });
+
 
     Schema::create('password_audit_logs', function (Blueprint $table) {
       $table->id();
@@ -112,6 +122,15 @@ return new class extends Migration {
 
       $table->foreign('password_request_id')->references('id')->on('password_requests')->onDelete('cascade');
       $table->foreign('identity_id')->references('id')->on('identities')->onDelete('cascade');
+    });
+
+    Schema::create('platform_position_access', function (Blueprint $table) {
+      $table->id();
+      $table->foreignId('position_id')->constrained()->onDelete('cascade');
+      $table->string('platform_id', 10);
+      $table->timestamps();
+
+      $table->foreign('platform_id')->references('id')->on('platforms')->onDelete('cascade');
     });
 
     // Index tambahan untuk tabel users.name (via relasi user.name)

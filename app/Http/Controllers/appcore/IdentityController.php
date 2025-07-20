@@ -27,8 +27,15 @@ class IdentityController extends Controller
   }
   public function getListData()
   {
+    $user = auth()->user();
     $data = Identity::with('platform:id,name')
       ->select('id', 'hostname', 'ip_addr_srv', 'username', 'functionality', 'platform_id', 'description');
+
+    // Filter jika bukan admin
+    if ($user->role !== 'admin') {
+      $allowedPlatformIds = $user->allowedPlatformIds(); // fungsi di model User
+      $data->whereIn('platform_id', $allowedPlatformIds);
+    }
 
     return DataTables::of($data)
       ->addColumn('platform_name', function ($row) {
@@ -211,4 +218,21 @@ class IdentityController extends Controller
         ->make(true);
     }
   }
+  public function getStats()
+  {
+    // Ambil ID platform Linux dan Database
+    $linuxPlatform = Platform::where('name', 'Linux')->first();
+    $dbPlatform = Platform::where('name', 'Database')->first();
+
+    $total = Identity::count();
+    $linux = Identity::where('platform_id', optional($linuxPlatform)->id)->count();
+    $database = Identity::where('platform_id', optional($dbPlatform)->id)->count();
+
+    return response()->json([
+      'total_identity' => $total,
+      'total_linux' => $linux,
+      'total_database' => $database,
+    ]);
+  }
+
 }

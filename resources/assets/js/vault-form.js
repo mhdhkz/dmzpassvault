@@ -22,7 +22,7 @@ $(function () {
       },
       autoUpdateInput: true,
       minDate: moment(),
-      maxSpan: { days: 5 }
+      maxSpan: { days: 4 }
     });
   }
 

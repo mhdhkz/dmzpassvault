@@ -1,3 +1,4 @@
+
 import json
 import argparse
 import string
@@ -141,6 +142,31 @@ def insert_audit_log(identity_id, event_type, user_id, triggered_by, note=None, 
     finally:
         conn.close()
 
+# ...
+# ===== JOB LOG =====
+def insert_password_job_log(identity_id, status, message, job_type='rotate', triggered_by='system', actor_ip=None):
+    conn = pymysql.connect(**DB_CONFIG)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO password_jobs (
+                    identity_id, job_type, status, message,
+                    triggered_by, actor_ip_addr, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            """, (
+                identity_id,
+                job_type,
+                status,  # HARUS salah satu dari: 'pending', 'running', 'done', 'failed'
+                message[:255],
+                triggered_by,
+                actor_ip
+            ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # ===== PROSES SINGLE =====
 def main(identity_id, updated_by, ip_addr=None):
     print(f"Mulai proses untuk identity {identity_id}", file=sys.stderr, flush=True)
@@ -163,6 +189,8 @@ def main(identity_id, updated_by, ip_addr=None):
             raise Exception(f"Platform {platform} tidak dikenali.")
 
         if not success:
+            insert_password_job_log(identity_id, 'failed', 'Gagal mengubah password di server target.',
+                                    'rotate', 'system' if updated_by == 1 else 'user', ip_addr)
             return {
                 "identity_id": identity_id,
                 "status": "error",
@@ -172,7 +200,6 @@ def main(identity_id, updated_by, ip_addr=None):
         encrypted = encrypt_aes192(password, AES_KEY)
         save_to_vault(identity_id, encrypted, updated_by)
 
-        # Audit log
         insert_audit_log(
             identity_id=identity_id,
             event_type='rotated',
@@ -181,6 +208,12 @@ def main(identity_id, updated_by, ip_addr=None):
             note='Rotasi password otomatis oleh sistem' if updated_by == 1 else 'Rotasi password manual oleh user',
             ip_addr=ip_addr
         )
+
+        insert_password_job_log(identity_id, 'done',
+                                f"Password berhasil diubah untuk {username}@{ip}",
+                                'rotate',
+                                'system' if updated_by == 1 else 'user',
+                                ip_addr)
 
         return {
             "identity_id": identity_id,
@@ -191,6 +224,8 @@ def main(identity_id, updated_by, ip_addr=None):
         }
 
     except Exception as e:
+        insert_password_job_log(identity_id, 'failed', str(e),
+                                'rotate', 'system' if updated_by == 1 else 'user', ip_addr)
         return {
             "identity_id": identity_id,
             "status": "error",
@@ -200,7 +235,6 @@ def main(identity_id, updated_by, ip_addr=None):
 # ===== MULTIPLE LOOPING =====
 def main_batch(identity_ids, updated_by, ip_addr=None):
     results = []
-
     for identity_id in identity_ids:
         try:
             result = main(identity_id, updated_by, ip_addr)
@@ -211,7 +245,6 @@ def main_batch(identity_ids, updated_by, ip_addr=None):
                 "status": "error",
                 "message": str(e)
             })
-
     print(json.dumps(results), flush=True)
 
 # ===== ENTRY POINT =====

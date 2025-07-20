@@ -52,7 +52,7 @@
           </div>
 
           <div class="col-12 text-center mt-3">
-            <button type="submit" class="btn btn-primary me-sm-3 me-1" id="btnUpdateIdentity">Simpan Perubahan</button>
+            <button type="button" class="btn btn-primary" id="btnUpdateIdentity">Simpan Perubahan</button>
             <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="modal">Batalkan</button>
           </div>
         </form>

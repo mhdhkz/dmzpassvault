@@ -1,5 +1,5 @@
 /**
- * Page Identity List
+ * Page User List
  */
 
 'use strict';
@@ -22,10 +22,8 @@ document.addEventListener('DOMContentLoaded', function (e) {
   bodyBg = config.colors.bodyBg;
   headingColor = config.colors.headingColor;
 
-  loadIdentityStats();
-
   // Variable declaration for table
-  const dt_user_table = document.querySelector('.datatables-users');
+  const dt_user_table = document.querySelector('.datatables-userlist');
   var select2 = $('.select2');
 
   // Inisialisasi toast swal
@@ -52,25 +50,11 @@ document.addEventListener('DOMContentLoaded', function (e) {
     });
   }
 
-  function loadIdentityStats() {
-    fetch('/identity/stats')
-      .then(response => response.json())
-      .then(data => {
-        const { total_identity, total_linux, total_database } = data;
-        document.getElementById('stat-total-identity').textContent = total_identity;
-        document.getElementById('stat-linux').textContent = total_linux;
-        document.getElementById('stat-db').textContent = total_database;
-      })
-      .catch(err => {
-        console.error('Gagal memuat statistik:', err);
-      });
-  }
-
   // Users datatable
   let dt_user;
   if (dt_user_table) {
     dt_user = new DataTable(dt_user_table, {
-      ajax: '/identity/list/data',
+      ajax: '/admin/user-list/data',
       processing: true,
       orderMulti: false,
       order: [],
@@ -78,13 +62,9 @@ document.addEventListener('DOMContentLoaded', function (e) {
         { data: 'id' },
         { data: 'id', orderable: false, render: DataTable.render.select() },
         { data: null },
-        { data: 'hostname' },
-        { data: 'ip_addr_srv' },
-        { data: 'username' },
-        { data: 'functionality' },
-        { data: 'platform_name' },
-        { data: 'platform_id', visible: false },
-        { data: 'description', visible: false },
+        { data: 'name' },
+        { data: 'email' },
+        { data: 'role' },
         { data: 'action' }
       ],
       columnDefs: [
@@ -125,8 +105,8 @@ document.addEventListener('DOMContentLoaded', function (e) {
           targets: 3,
           responsivePriority: 3,
           render: function (data, type, full, meta) {
-            var hostname = full['hostname'];
-            var initials = (hostname.match(/\b\w/g) || []).map(char => char.toUpperCase());
+            var username = full['name'];
+            var initials = (username.match(/\b\w/g) || []).map(char => char.toUpperCase());
             initials = ((initials.shift() || '') + (initials.pop() || '')).toUpperCase();
             var states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];
             var state = states[Math.floor(Math.random() * states.length)];
@@ -138,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                   <div class="avatar avatar-sm me-4">${avatar}</div>
                 </div>
                 <div class="d-flex flex-column">
-                  <span class="fw-medium text-heading">${hostname}</span>
+                  <span class="fw-medium text-heading">${username}</span>
                 </div>
               </div>
             `;
@@ -146,29 +126,17 @@ document.addEventListener('DOMContentLoaded', function (e) {
         },
         {
           targets: 4,
-          render: function (data, type, full) {
-            return `<span class="text-heading">${full['ip_addr_srv']}</span>`;
+          render: function (data, type, full, meta) {
+            var email = full['email'];
+            return '<span class="text-heading">' + email + '</span>';
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            var username = full['username'];
-            return '<span class="text-heading">' + username + '</span>';
-          }
-        },
-        {
-          targets: 6,
-          render: function (data, type, full, meta) {
-            var functionality = full['functionality'];
+            var role = full['role'];
 
-            return '<span class="text-heading">' + functionality + '</span>';
-          }
-        },
-        {
-          targets: 7,
-          render: function (data, type, full) {
-            return `<span class="text-heading">${full['platform_name']}</span>`;
+            return '<span class="text-heading">' + role + '</span>';
           }
         },
         {
@@ -189,15 +157,12 @@ document.addEventListener('DOMContentLoaded', function (e) {
 
             if (role === 'admin') {
               buttons += `
-                <a href="javascript:;" class="btn btn-icon btn-edit-identity"
+                <a href="javascript:;" class="btn btn-icon btn-edit-userlist"
                   data-bs-toggle="modal"
                   data-id="${full.id}"
-                  data-hostname="${full.hostname}"
-                  data-ip_addr_srv="${full.ip_addr_srv}"
-                  data-username="${full.username}"
-                  data-functionality="${full.functionality}"
-                  data-platform_id="${full.platform_id}"
-                  data-description="${full.description ?? ''}">
+                  data-name="${full.name}"
+                  data-email="${full.email}"
+                  data-role="${full.role}">
                   <i class="icon-base bx bx-edit icon-md"></i>
                 </a>
 
@@ -231,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
           features: [
             {
               search: {
-                placeholder: 'Cari Identity',
+                placeholder: 'Cari User',
                 text: '_INPUT_'
               }
             },
@@ -272,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
 
                       const idsToDelete = selectedData.map(row => row.id);
 
-                      fetch('/identity/delete/multiple', {
+                      fetch('/admin/user-list/delete-multiple', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
@@ -287,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
 
                             Toast.fire({
                               icon: 'success',
-                              title: 'Data berhasil dihapus',
+                              title: 'User berhasil dihapus',
                               customClass: {
                                 popup: 'colored-toast'
                               }
@@ -296,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                             Swal.fire({
                               icon: 'error',
                               title: 'Gagal',
-                              text: 'Data gagal dihapus.',
+                              text: 'User gagal dihapus.',
                               confirmButtonText: 'OK',
                               customClass: {
                                 confirmButton: 'btn btn-danger'
@@ -335,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-printer me-2"></i>Print</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [3, 4, 5, 6, 7],
+                        columns: [3, 4, 5],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -362,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bx-file me-2"></i>CSV</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [3, 4, 5, 6, 7],
+                        columns: [3, 4, 5],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -379,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-export me-2"></i>Excel</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [3, 4, 5, 6, 7],
+                        columns: [3, 4, 5],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -396,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                       text: `<span class="d-flex align-items-center"><i class="icon-base bx bxs-file-pdf me-2"></i>PDF</span>`,
                       className: 'dropdown-item',
                       exportOptions: {
-                        columns: [3, 4, 5, 6, 7],
+                        columns: [3, 4, 5],
                         format: {
                           body: function (inner) {
                             if (!inner) return '';
@@ -412,10 +377,10 @@ document.addEventListener('DOMContentLoaded', function (e) {
                 },
                 // Tombol Tambah Identity hanya untuk admin
                 window.USER_ROLE === 'admin' && {
-                  text: '<i class="bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah Identity Baru</span>',
+                  text: '<i class="bx bx-plus icon-sm me-0 me-sm-2"></i><span class="d-none d-sm-inline-block">Tambah User Baru</span>',
                   className: 'btn btn-primary',
                   action: function () {
-                    window.location.href = '/identity/identity-form';
+                    window.location.href = '/admin/user-form';
                   }
                 }
               ].filter(Boolean) // 🔑 penting agar `false` tidak menyebabkan error
@@ -455,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
           display: DataTable.Responsive.display.modal({
             header: function (row) {
               const data = row.data();
-              return 'Details of ' + data['hostname'];
+              return 'Details of ' + data['name'];
             }
           }),
           type: 'column',
@@ -541,20 +506,16 @@ document.addEventListener('DOMContentLoaded', function (e) {
         };
 
         // Inisialisasi dropdown awal
-        createSearchableDropdown(5, '.server_username', 'ServerUsername', 'Pilih Username');
-        createSearchableDropdown(6, '.server_functionality', 'ServerFunctionality', 'Pilih Functionality');
-        createSearchableDropdown(7, '.server_platform', 'ServerPlatform', 'Pilih Platform');
+        createSearchableDropdown(5, '.user_role', 'UserRole', 'Pilih Role');
 
         // Update saat redraw
         api.on('draw', function () {
-          updateSearchableDropdown('ServerUsername', 5, 'username');
-          updateSearchableDropdown('ServerFunctionality', 6, 'functionality');
-          updateSearchableDropdown('ServerPlatform', 7, 'platform_name');
+          updateSearchableDropdown('UserRole', 5, 'role');
         });
 
         // Clear filter
         document.getElementById('clearFilterBtn')?.addEventListener('click', function () {
-          $('#ServerUsername, #ServerFunctionality, #ServerPlatform').val('').trigger('change');
+          $('#UserRole').val('').trigger('change');
           api.columns().search('').draw();
         });
       }
@@ -584,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
       }).then(result => {
         if (!result.isConfirmed) return;
 
-        fetch(`/identity/delete/${id}`, {
+        fetch(`/admin/user-list/delete/${id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -640,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
         }).then(result => {
           if (!result.isConfirmed) return;
 
-          fetch(`/identity/delete/${id}`, {
+          fetch(`/admin/user-list/delete/${id}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -674,37 +635,28 @@ document.addEventListener('DOMContentLoaded', function (e) {
       const viewBtn = e.target.closest('.btn-view-record');
       if (viewBtn) {
         const id = viewBtn.dataset.id;
-        if (id) window.location.href = `/identity/detail/${id}`;
+        if (id) window.location.href = `/admin/user/detail/${id}`;
       }
 
       // Edit
-      const editBtn = e.target.closest('.btn-edit-identity');
+      const editBtn = e.target.closest('.btn-edit-userlist');
       if (editBtn) {
-        const modal = document.getElementById('editIdentity');
-        modal.querySelector('#editIdentityId').value = editBtn.dataset.id;
-        modal.querySelector('#editHostname').value = editBtn.dataset.hostname;
-        modal.querySelector('#editIpAddress').value = editBtn.dataset.ip_addr_srv;
-        modal.querySelector('#editUsername').value = editBtn.dataset.username;
-        modal.querySelector('#editFunctionality').value = editBtn.dataset.functionality;
-        modal.querySelector('#editDescription').value = editBtn.dataset.description;
+        const modal = document.getElementById('editUserList');
+        if (modal) {
+          bootstrap.Modal.getOrCreateInstance(modal).show();
+        } else {
+          console.error('Modal #editUserList tidak ditemukan!');
+        }
 
-        const select = modal.querySelector('#editPlatform');
-        if (select && window.platformList && editBtn.dataset.platform_id) {
-          select.innerHTML = '';
-          for (const [key, value] of Object.entries(window.platformList)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = value;
-            if (parseInt(key) === parseInt(editBtn.dataset.platform_id)) {
-              opt.selected = true;
-            }
-            select.appendChild(opt);
-          }
+        // Isi nilai input
+        modal.querySelector('#editUserId').value = editBtn.dataset.id;
+        modal.querySelector('#editUserName').value = editBtn.dataset.name;
+        modal.querySelector('#editUserEmail').value = editBtn.dataset.email;
 
-          $(select).select2({
-            dropdownParent: $('#editIdentity'),
-            width: '100%'
-          });
+        const select = modal.querySelector('#editUserRole');
+        if (select) {
+          select.value = editBtn.dataset.role;
+          $(select).trigger('change'); // sinkron ke Select2 UI
         }
       }
     });
@@ -713,23 +665,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
     $('.dt-buttons > .btn-group > button').removeClass('btn-secondary');
   }
 
-  // Handle form submit untuk edit identity
-  document.querySelector('#editIdentityForm')?.addEventListener('submit', function (e) {
+  // Handle form submit untuk edit user
+  // Handle form submit untuk edit user
+  document.querySelector('#editUserListForm')?.addEventListener('submit', function (e) {
     e.preventDefault();
 
     const form = e.target;
-    const id = form.querySelector('#editIdentityId').value;
+    const id = form.querySelector('#editUserId').value;
 
     const data = {
-      hostname: form.querySelector('#editHostname').value,
-      ip_addr_srv: form.querySelector('#editIpAddress').value,
-      username: form.querySelector('#editUsername').value,
-      functionality: form.querySelector('#editFunctionality').value,
-      platform_id: form.querySelector('#editPlatform').value,
-      description: form.querySelector('#editDescription').value
+      name: form.querySelector('#editUserName').value,
+      email: form.querySelector('#editUserEmail').value,
+      role: form.querySelector('#editUserRole').value
     };
 
-    fetch(`/identity/${id}`, {
+    fetch(`/admin/user-list/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -740,13 +690,53 @@ document.addEventListener('DOMContentLoaded', function (e) {
       .then(res => res.json())
       .then(res => {
         if (res.success) {
-          $('#editIdentity').modal('hide');
-          Swal.fire('Berhasil', 'Data berhasil diperbarui', 'success');
+          $('#editUserList').modal('hide');
+
+          // Jika user sedang login dan email berubah → logout
+          if (res.email_changed && res.is_self) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Email berhasil diubah',
+              text: 'Kamu akan logout dan diminta login ulang.',
+              confirmButtonText: 'OK'
+            }).then(() => {
+              const logoutForm = document.createElement('form');
+              logoutForm.method = 'POST';
+              logoutForm.action = '/logout';
+              const token = document.querySelector('meta[name="csrf-token"]').content;
+              const csrfInput = document.createElement('input');
+              csrfInput.type = 'hidden';
+              csrfInput.name = '_token';
+              csrfInput.value = token;
+              logoutForm.appendChild(csrfInput);
+              document.body.appendChild(logoutForm);
+              logoutForm.submit();
+            });
+            return; // 🧠 stop di sini
+          }
+
+          // Jika user sedang login dan role berubah → redirect ke dashboard
+          if (res.role_changed && res.is_self) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Perubahan Role',
+              text: 'Role kamu telah diubah. Akan diarahkan ke dashboard.',
+              timer: 2000,
+              showConfirmButton: false
+            }).then(() => {
+              window.location.href = '/dashboard';
+            });
+            return; // 🧠 stop di sini
+          }
+
+          // Jika bukan user sendiri → reload dan tampilkan sukses
           dt_user.ajax.reload();
+          Swal.fire('Berhasil', 'Data berhasil diperbarui', 'success');
         } else {
           Swal.fire('Gagal', 'Gagal memperbarui data', 'error');
         }
       })
+
       .catch(err => {
         console.error(err);
         Swal.fire('Error', 'Terjadi kesalahan saat mengirim data', 'error');
@@ -785,4 +775,21 @@ document.addEventListener('DOMContentLoaded', function (e) {
       });
     });
   }, 100);
+
+  // Statistik User
+  fetch('/admin/user-list/stats')
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('total-user').textContent = data.total;
+      document.getElementById('total-sistem').textContent = data.system;
+      document.getElementById('total-admin').textContent = data.admin;
+      document.getElementById('total-regular').textContent = data.user;
+    })
+    .catch(err => {
+      console.error('Gagal memuat statistik:', err);
+      Toast.fire({
+        icon: 'error',
+        title: 'Gagal memuat statistik user'
+      });
+    });
 });
